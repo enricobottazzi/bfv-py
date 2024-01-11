@@ -102,7 +102,7 @@ class TestBFV(unittest.TestCase):
                 and coeff <= self.bfv.rlwe.Rt.modulus // 2
             )
 
-    def test_valid_encryption(self):
+    def test_valid_public_key_encryption(self):
         secret_key = self.bfv.SecretKeyGen()
         e = self.bfv.rlwe.SampleFromErrorDistribution()
         public_key = self.bfv.PublicKeyGen(secret_key, e)
@@ -113,7 +113,9 @@ class TestBFV(unittest.TestCase):
         e1 = self.bfv.rlwe.SampleFromErrorDistribution()
         u = self.bfv.rlwe.SampleFromTernaryDistribution()
 
-        ciphertext = self.bfv.Encrypt(public_key, message, (e0, e1), u, self.delta)
+        ciphertext = self.bfv.PubKeyEncrypt(
+            public_key, message, (e0, e1), u, self.delta
+        )
 
         # Ensure that the ciphertext is a polynomial in Rq
         # Ensure that the coefficients of the ciphertext are within Z_q = (-q/2, q/2)
@@ -130,7 +132,7 @@ class TestBFV(unittest.TestCase):
         # Ensure that the degree of the ciphertext is at most n-1, which means the has at most n coefficients
         self.assertTrue(len(ciphertext[0].coefficients) <= self.bfv.rlwe.n)
 
-    def test_valid_decryption(self):
+    def test_valid_public_key_decryption(self):
         secret_key = self.bfv.SecretKeyGen()
         e = self.bfv.rlwe.SampleFromErrorDistribution()
         public_key = self.bfv.PublicKeyGen(secret_key, e)
@@ -141,9 +143,24 @@ class TestBFV(unittest.TestCase):
         e1 = self.bfv.rlwe.SampleFromErrorDistribution()
         u = self.bfv.rlwe.SampleFromTernaryDistribution()
 
-        ciphertext = self.bfv.Encrypt(public_key, message, (e0, e1), u, self.delta)
+        ciphertext = self.bfv.PubKeyEncrypt(
+            public_key, message, (e0, e1), u, self.delta
+        )
 
-        dec = self.bfv.Decrypt(secret_key, ciphertext, (e0, e1), e, u)
+        dec = self.bfv.PubKeyDecrypt(secret_key, ciphertext, (e0, e1), e, u)
+
+        # ensure that message and dec are the same
+        for i in range(len(message.coefficients)):
+            self.assertEqual(message.coefficients[i], dec.coefficients[i])
+
+    def test_valid_secret_key_decryption(self):
+        secret_key = self.bfv.SecretKeyGen()
+        message = self.bfv.rlwe.Rt.sample_polynomial()
+        e = self.bfv.rlwe.SampleFromErrorDistribution()
+
+        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message, e, self.delta)
+
+        dec = self.bfv.SecretKeyDecrypt(secret_key, ciphertext, e)
 
         # ensure that message and dec are the same
         for i in range(len(message.coefficients)):
@@ -165,13 +182,17 @@ class TestBFV(unittest.TestCase):
         e1 = self.bfv.rlwe.SampleFromErrorDistribution()
         u1 = self.bfv.rlwe.SampleFromTernaryDistribution()
         error1 = (e0, e1)
-        ciphertext1 = self.bfv.Encrypt(public_key, message1, error1, u1, self.delta)
+        ciphertext1 = self.bfv.PubKeyEncrypt(
+            public_key, message1, error1, u1, self.delta
+        )
 
         e0 = self.bfv.rlwe.SampleFromErrorDistribution()
         e1 = self.bfv.rlwe.SampleFromErrorDistribution()
         u2 = self.bfv.rlwe.SampleFromTernaryDistribution()
         error2 = (e0, e1)
-        ciphertext2 = self.bfv.Encrypt(public_key, message2, error2, u2, self.delta)
+        ciphertext2 = self.bfv.PubKeyEncrypt(
+            public_key, message2, error2, u2, self.delta
+        )
 
         ciphertext_sum = self.bfv.EvalAdd(ciphertext1, ciphertext2)
 
@@ -199,7 +220,7 @@ class TestBFV(unittest.TestCase):
 
         u_sum = u1 + u2
 
-        dec = self.bfv.Decrypt(secret_key, ciphertext_sum, e_sum, e, u_sum)
+        dec = self.bfv.PubKeyDecrypt(secret_key, ciphertext_sum, e_sum, e, u_sum)
 
         # ensure that message_sum and dec are the same
         for i in range(len(message_sum.coefficients)):
@@ -221,18 +242,22 @@ class TestBFV(unittest.TestCase):
         error = (e0, e1)
         u1 = self.bfv.rlwe.SampleFromTernaryDistribution()
 
-        ciphertext1 = self.bfv.Encrypt(public_key, message1, error, u1, self.delta)
+        ciphertext1 = self.bfv.PubKeyEncrypt(
+            public_key, message1, error, u1, self.delta
+        )
 
         u2 = self.bfv.rlwe.SampleFromTernaryDistribution()
 
-        const_ciphertext = self.bfv.EncryptConst(public_key, message2, u2, self.delta)
+        const_ciphertext = self.bfv.PubKeyEncryptConst(
+            public_key, message2, u2, self.delta
+        )
 
         ciphertext_sum = self.bfv.EvalAdd(ciphertext1, const_ciphertext)
 
         u_sum = u1 + u2
 
         # decrypt ciphertext_sum
-        dec = self.bfv.Decrypt(secret_key, ciphertext_sum, error, e, u_sum)
+        dec = self.bfv.PubKeyDecrypt(secret_key, ciphertext_sum, error, e, u_sum)
 
         # ensure that message_sum and dec are the same
         for i in range(len(message_sum.coefficients)):
@@ -271,7 +296,7 @@ class TestBFVVWithCRT(unittest.TestCase):
     # In this test, the public key is generated in the Rq basis and then transformed to the CRT basis.
     # The encryption operation is performed in the CRT basis (Rqi).
     # Eventually, the ciphertext is recovered in the Rq basis and compared with the ciphertext generated in the Rq basis.
-    def test_valid_encryption(self):
+    def test_valid_public_key_encryption(self):
         bfv_rq = BFV(RLWE(self.n, self.crt_moduli.q, self.t, self.discrete_gaussian))
         secret_key = bfv_rq.SecretKeyGen()
         e = bfv_rq.rlwe.SampleFromErrorDistribution()
@@ -299,7 +324,7 @@ class TestBFVVWithCRT(unittest.TestCase):
             )
             public_key_rqi = (pk0_rqis[i], pk1_rqis[i])
 
-            ciphertext = bfv_rqi.Encrypt(
+            ciphertext = bfv_rqi.PubKeyEncrypt(
                 public_key_rqi, message, (e0, e1), u, self.delta
             )
             c0_rqis.append(ciphertext[0])
@@ -314,7 +339,7 @@ class TestBFVVWithCRT(unittest.TestCase):
         )
 
         # Perform encryption in Rq
-        ciphertext = bfv_rq.Encrypt(public_key, message, (e0, e1), u, self.delta)
+        ciphertext = bfv_rq.PubKeyEncrypt(public_key, message, (e0, e1), u, self.delta)
 
         # Assert that the two ciphertexts are the same
         self.assertEqual(c0.coefficients, ciphertext[0].coefficients)
@@ -323,7 +348,7 @@ class TestBFVVWithCRT(unittest.TestCase):
     # In the CRT setting, The uniform elements `a` used to generate the public key are chosen directly in the CRT basis by drawing uniform value ai in Rqi.
     # The operations for encryption are implemented directly in the CRT basis.
     # The ciphertext is recovered in the Rq basis and then decrypted in the Rqi basis. The decrypted message is compared with the original message.
-    def test_valid_decryption(self):
+    def test_valid_public_key_decryption(self):
         bfv_rq = BFV(RLWE(self.n, self.crt_moduli.q, self.t, self.discrete_gaussian))
 
         secret_key = bfv_rq.SecretKeyGen()
@@ -342,7 +367,7 @@ class TestBFVVWithCRT(unittest.TestCase):
                 RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
             )
             public_key_rqi = bfv_rqi.PublicKeyGen(secret_key, e)
-            ciphertext = bfv_rqi.Encrypt(
+            ciphertext = bfv_rqi.PubKeyEncrypt(
                 public_key_rqi, message, (e0, e1), u, self.delta
             )
             c0_rqis.append(ciphertext[0])
@@ -357,7 +382,41 @@ class TestBFVVWithCRT(unittest.TestCase):
         )
 
         # Perform decryption in Rq basis
-        dec = bfv_rq.Decrypt(secret_key, (c0, c1), (e0, e1), e, u)
+        dec = bfv_rq.PubKeyDecrypt(secret_key, (c0, c1), (e0, e1), e, u)
+
+        # Assert that the two decryptions are the same
+        self.assertEqual(dec.coefficients, message.coefficients)
+
+    # Same as before, but now using secret key encryption
+    def test_valid_secret_key_decryption(self):
+        bfv_rq = BFV(RLWE(self.n, self.crt_moduli.q, self.t, self.discrete_gaussian))
+
+        secret_key = bfv_rq.SecretKeyGen()
+        e = bfv_rq.rlwe.SampleFromErrorDistribution()
+        message = bfv_rq.rlwe.Rt.sample_polynomial()
+
+        # Perform secret key encryption in CRT basis
+        c0_rqis = []
+        c1_rqis = []
+
+        for i in range(len(self.crt_moduli.qis)):
+            bfv_rqi = BFV(
+                RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
+            )
+            ciphertext = bfv_rqi.SecretKeyEncrypt(secret_key, message, e, self.delta)
+            c0_rqis.append(ciphertext[0])
+            c1_rqis.append(ciphertext[1])
+
+        # Recover ciphertext in Rq
+        c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            c0_rqis, self.n, self.crt_moduli
+        )
+        c1 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            c1_rqis, self.n, self.crt_moduli
+        )
+
+        # Perform decryption in Rq basis
+        dec = bfv_rq.SecretKeyDecrypt(secret_key, (c0, c1), e)
 
         # Assert that the two decryptions are the same
         self.assertEqual(dec.coefficients, message.coefficients)

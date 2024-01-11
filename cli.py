@@ -56,7 +56,7 @@ def main(args):
     delta = int(math.floor(q / t))
 
     # Encrypt message
-    ciphertext = bfv.Encrypt(public_key, message, error, u, delta)
+    ciphertext = bfv.PubKeyEncrypt(public_key, message, error, u, delta)
 
     encrypt_end_time = time.time()
     encrypt_elapsed_time = encrypt_end_time - encrypt_start_time
@@ -75,7 +75,7 @@ def main(args):
 
     decrypt_start_time = time.time()
     # Decrypt ciphertext
-    dec = bfv.Decrypt(secret_key, ciphertext, error, e, u)
+    dec = bfv.PubKeyDecrypt(secret_key, ciphertext, error, e, u)
 
     decrypt_end_time = time.time()
     decrypt_elapsed_time = decrypt_end_time - decrypt_start_time

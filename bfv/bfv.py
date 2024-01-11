@@ -124,7 +124,7 @@ class BFV:
 
         return public_key
 
-    def Encrypt(
+    def PubKeyEncrypt(
         self,
         public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
@@ -176,7 +176,53 @@ class BFV:
 
         return ciphertext
 
-    def EncryptConst(
+    def SecretKeyEncrypt(
+        self,
+        secret_key: Polynomial,
+        m: Polynomial,
+        e: Polynomial,
+        delta: int,
+    ) -> tuple[Polynomial, Polynomial]:
+        """
+        Encrypt a given message m with a given secret key .
+
+        Parameters:
+        - secret_key: Public key.
+        - m: message. This must be a polynomial in Rt.
+        - e: error polynomial sampled from the distribution χ Error.
+        - delta: delta = q/t
+
+        Returns:
+        ciphertext: Generated ciphertext.
+        """
+
+        # Compute the ciphertext.
+        # delta * m
+        delta_m = Polynomial([delta]) * m
+
+        # Sample a polynomial a from Rq
+        a = self.rlwe.Rq.sample_polynomial()
+
+        # a * s
+        mul = a * secret_key
+
+        # b = a*s + e.
+        b = mul + e
+
+        # ct_0 = delta_m + b
+        ct_0 = delta_m + b
+
+        # ct_0 will be in Rq
+        ct_0.reduce_in_ring(self.rlwe.Rq)
+
+        # ct_1 = -a
+        ct_1 = a * Polynomial([-1])
+
+        ciphertext = (ct_0, ct_1)
+
+        return ciphertext
+
+    def PubKeyEncryptConst(
         self,
         public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
@@ -219,7 +265,7 @@ class BFV:
 
         return ciphertext
 
-    def Decrypt(
+    def PubKeyDecrypt(
         self,
         secret_key: Polynomial,
         ciphertext: tuple[Polynomial, Polynomial],
@@ -228,7 +274,7 @@ class BFV:
         u: Polynomial,
     ):
         """
-        Decrypt a given ciphertext with a given secret key.
+        Decrypt a given ciphertext (encrypted using public key encryption) with a given secret key.
 
         Parameters:
         - secret_key: Secret key.
@@ -259,6 +305,60 @@ class BFV:
         threshold = q / (2 * t) - rt_Q / 2
 
         for coeff in v.coefficients:
+            assert abs(coeff) < (
+                threshold
+            ), f"Noise {abs(coeff)} exceeds the threshold value {threshold}, decryption won't work"
+
+        ct1_s = ct1 * s
+
+        # ct0 + ct1*s
+        numerator_1 = ct0 + ct1_s
+
+        # Reduce numerator_1 in Rq
+        numerator_1.reduce_in_ring(self.rlwe.Rq)
+
+        numerator = Polynomial([t]) * numerator_1
+
+        # For each coefficient of the numerator, divide it by q and round it to the nearest integer
+        quotient = [round(coeff / q) for coeff in numerator.coefficients]
+
+        # trim leading zeros
+        quotient = np.trim_zeros(quotient, "f")
+
+        quotient_poly = Polynomial(quotient)
+
+        # Reduce the quotient in Rt
+        quotient_poly.reduce_in_ring(self.rlwe.Rt)
+
+        return quotient_poly
+
+    def SecretKeyDecrypt(
+        self,
+        secret_key: Polynomial,
+        ciphertext: tuple[Polynomial, Polynomial],
+        e: Polynomial,
+    ):
+        """
+        Decrypt a given ciphertext (encrypted using secret key encryption) with a given secret key.
+
+        Parameters:
+        - secret_key: Secret key.
+        - ciphertext: Ciphertext.
+        - e: error polynomial sampled from the distribution χ Error. Used for encryption. This is used when calculating that the noise is small enough to decrypt the message.
+
+        Returns: Decrypted message.
+        """
+        # dec = round(t/q * ((ct0 + ct1*s))
+        ct0 = ciphertext[0]
+        ct1 = ciphertext[1]
+        s = secret_key
+        t = self.rlwe.Rt.modulus
+        q = self.rlwe.Rq.modulus
+
+        # Ensure that `e` < Q/(2t)
+        threshold = q / (2 * t)
+
+        for coeff in e.coefficients:
             assert abs(coeff) < (
                 threshold
             ), f"Noise {abs(coeff)} exceeds the threshold value {threshold}, decryption won't work"
