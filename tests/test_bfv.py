@@ -1,6 +1,6 @@
 import math
 import unittest
-
+from bfv.crt import CRTModuli, CRTPolynomial
 from bfv.discrete_gauss import DiscreteGaussian
 from bfv.polynomial import PolynomialRing, Polynomial
 from bfv.bfv import RLWE, BFV
@@ -239,112 +239,125 @@ class TestBFV(unittest.TestCase):
             self.assertEqual(message_sum.coefficients[i], dec.coefficients[i])
 
 
-# # class TestBFVVWithCRT(unittest.TestCase):
-# #     # The bigmodulus q is intepreted as a product of small moduli qis.
-# #     def setUp(self):
-# #         qis = [
-# #             1152921504606584833,
-# #             1152921504598720513,
-# #             1152921504597016577,
-# #             1152921504595968001,
-# #             1152921504595640321,
-# #             1152921504593412097,
-# #             1152921504592822273,
-# #             1152921504592429057,
-# #             1152921504589938689,
-# #             1152921504586530817,
-# #             1152921504585547777,
-# #             1152921504583647233,
-# #             1152921504581877761,
-# #             1152921504581419009,
-# #             1152921504580894721,
-# #         ]
-# #         q = Q(qis)
-# #         self.q = q
-# #         self.n = 1024
-# #         self.sigma = 3.2
-# #         self.discrete_gaussian = DiscreteGaussian(self.sigma)
-# #         self.t = 65537
-# #         self.delta = int(math.floor(q.q / self.t))
+class TestBFVVWithCRT(unittest.TestCase):
+    # The bigmodulus q is intepreted as a product of small moduli qis.
+    def setUp(self):
+        qis = [
+            1152921504606584833,
+            1152921504598720513,
+            1152921504597016577,
+            1152921504595968001,
+            1152921504595640321,
+            1152921504593412097,
+            1152921504592822273,
+            1152921504592429057,
+            1152921504589938689,
+            1152921504586530817,
+            1152921504585547777,
+            1152921504583647233,
+            1152921504581877761,
+            1152921504581419009,
+            1152921504580894721,
+        ]
+        crt_moduli = CRTModuli(qis)
+        self.crt_moduli = crt_moduli
+        self.n = 1024
+        self.sigma = 3.2
+        self.discrete_gaussian = DiscreteGaussian(self.sigma)
+        self.t = 65537
+        self.delta = int(math.floor(crt_moduli.q / self.t))
 
-# #     # In the CRT setting, small integers such as noise and key coefficients are drawn from the Error distribution and Ternary distribution respectively and are stored as single precision integers.
-# #     # In this test, the public key is generated in the Rq basis and then transformed to the CRT basis.
-# #     # The encryption operation is performed in the CRT basis (Rqi).
-# #     # Eventually, the ciphertext is recovered in the Rq basis and compared with the ciphertext generated in the Rq basis.
-# #     def test_valid_encryption(self):
-# #         bfv_rq = BFV(self.n, self.q.q, self.t, self.discrete_gaussian)
-# #         secret_key = bfv_rq.SecretKeyGen()
-# #         e = bfv_rq.SampleFromErrorDistribution()
-# #         u = bfv_rq.SampleFromTernaryDistribution()
-# #         e0 = bfv_rq.SampleFromErrorDistribution()
-# #         e1 = bfv_rq.SampleFromErrorDistribution()
-# #         message = bfv_rq.Rt.sample_polynomial()
-# #         public_key = bfv_rq.PublicKeyGen(secret_key, e)
+    # In the CRT setting, small integers such as noise and key coefficients are drawn from the Error distribution and Ternary distribution respectively and are stored as single precision integers.
+    # In this test, the public key is generated in the Rq basis and then transformed to the CRT basis.
+    # The encryption operation is performed in the CRT basis (Rqi).
+    # Eventually, the ciphertext is recovered in the Rq basis and compared with the ciphertext generated in the Rq basis.
+    def test_valid_encryption(self):
+        bfv_rq = BFV(RLWE(self.n, self.crt_moduli.q, self.t, self.discrete_gaussian))
+        secret_key = bfv_rq.SecretKeyGen()
+        e = bfv_rq.rlwe.SampleFromErrorDistribution()
+        u = bfv_rq.rlwe.SampleFromTernaryDistribution()
+        e0 = bfv_rq.rlwe.SampleFromErrorDistribution()
+        e1 = bfv_rq.rlwe.SampleFromErrorDistribution()
+        message = bfv_rq.rlwe.Rt.sample_polynomial()
+        public_key = bfv_rq.PublicKeyGen(secret_key, e)
 
-# #         # Perform encryption in CRT basis
-# #         c0_rqis = []
-# #         c1_rqis = []
+        # Perform encryption in CRT basis
+        c0_rqis = []
+        c1_rqis = []
 
-# #         # Transform public key to CRT basis
-# #         pk0_rqis = CRTPolynomial.from_rq_polynomial_to_rqi_polynomials(
-# #             public_key[0], self.q
-# #         )
-# #         pk1_rqis = CRTPolynomial.from_rq_polynomial_to_rqi_polynomials(
-# #             public_key[1], self.q
-# #         )
+        # Transform public key to CRT basis
+        pk0_rqis = CRTPolynomial.from_rq_polynomial_to_rqi_polynomials(
+            public_key[0], self.n, self.crt_moduli
+        )
+        pk1_rqis = CRTPolynomial.from_rq_polynomial_to_rqi_polynomials(
+            public_key[1], self.n, self.crt_moduli
+        )
 
-# #         for i in range(len(self.q.qis)):
-# #             bfv_rqi = BFV(self.n, self.q.qis[i], self.t, self.discrete_gaussian)
-# #             public_key_rqi = (pk0_rqis[i], pk1_rqis[i])
-# #             ciphertext = bfv_rqi.Encrypt(
-# #                 public_key_rqi, message, (e0, e1), u, self.delta
-# #             )
-# #             c0_rqis.append(ciphertext[0])
-# #             c1_rqis.append(ciphertext[1])
+        for i in range(len(self.crt_moduli.qis)):
+            bfv_rqi = BFV(
+                RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
+            )
+            public_key_rqi = (pk0_rqis[i], pk1_rqis[i])
 
-# #         # Recover ciphertext
-# #         c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(c0_rqis, self.q)
-# #         c1 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(c1_rqis, self.q)
+            ciphertext = bfv_rqi.Encrypt(
+                public_key_rqi, message, (e0, e1), u, self.delta
+            )
+            c0_rqis.append(ciphertext[0])
+            c1_rqis.append(ciphertext[1])
 
-# #         # Perform encryption in Rq
-# #         ciphertext = bfv_rq.Encrypt(public_key, message, (e0, e1), u, self.delta)
+        # Recover ciphertext in Rq
+        c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            c0_rqis, self.n, self.crt_moduli
+        )
+        c1 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            c1_rqis, self.n, self.crt_moduli
+        )
 
-# #         # Assert that the two ciphertexts are the same
-# #         self.assertEqual(c0.coefficients, ciphertext[0].coefficients)
-# #         self.assertEqual(c1.coefficients, ciphertext[1].coefficients)
+        # Perform encryption in Rq
+        ciphertext = bfv_rq.Encrypt(public_key, message, (e0, e1), u, self.delta)
 
-# #     # In the CRT setting, The uniform elements `a` used to generate the public key are chosen directly in the CRT basis by drawing uniform value ai in Rqi.
-# #     # The operations for encryption are implemented directly in the CRT basis.
-# #     # The ciphertext is recovered in the Rq basis and then decrypted in the Rqi basis. The decrypted message is compared with the original message.
-# #     def test_valid_decryption(self):
-# #         bfv_rq = BFV(self.n, self.q.q, self.t, self.discrete_gaussian)
+        # Assert that the two ciphertexts are the same
+        self.assertEqual(c0.coefficients, ciphertext[0].coefficients)
+        self.assertEqual(c1.coefficients, ciphertext[1].coefficients)
 
-# #         secret_key = bfv_rq.SecretKeyGen()
-# #         e = bfv_rq.SampleFromErrorDistribution()
-# #         u = bfv_rq.SampleFromTernaryDistribution()
-# #         e0 = bfv_rq.SampleFromErrorDistribution()
-# #         e1 = bfv_rq.SampleFromErrorDistribution()
-# #         message = bfv_rq.Rt.sample_polynomial()
+    # In the CRT setting, The uniform elements `a` used to generate the public key are chosen directly in the CRT basis by drawing uniform value ai in Rqi.
+    # The operations for encryption are implemented directly in the CRT basis.
+    # The ciphertext is recovered in the Rq basis and then decrypted in the Rqi basis. The decrypted message is compared with the original message.
+    def test_valid_decryption(self):
+        bfv_rq = BFV(RLWE(self.n, self.crt_moduli.q, self.t, self.discrete_gaussian))
 
-# #         # Perform encryption in CRT basis
-# #         c0_rqis = []
-# #         c1_rqis = []
+        secret_key = bfv_rq.SecretKeyGen()
+        e = bfv_rq.rlwe.SampleFromErrorDistribution()
+        u = bfv_rq.rlwe.SampleFromTernaryDistribution()
+        e0 = bfv_rq.rlwe.SampleFromErrorDistribution()
+        e1 = bfv_rq.rlwe.SampleFromErrorDistribution()
+        message = bfv_rq.rlwe.Rt.sample_polynomial()
 
-# #         for i in range(len(self.q.qis)):
-# #             bfv_rqi = BFV(self.n, self.q.qis[i], self.t, self.discrete_gaussian)
-# #             public_key_rqi = bfv_rqi.PublicKeyGen(secret_key, e)
-# #             ciphertext = bfv_rqi.Encrypt(
-# #                 public_key_rqi, message, (e0, e1), u, self.delta
-# #             )
-# #             c0_rqis.append(ciphertext[0])
-# #             c1_rqis.append(ciphertext[1])
+        # Perform encryption in CRT basis
+        c0_rqis = []
+        c1_rqis = []
 
-# #         # Recover ciphertext
-# #         c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(c0_rqis, self.q)
-# #         c1 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(c1_rqis, self.q)
+        for i in range(len(self.crt_moduli.qis)):
+            bfv_rqi = BFV(
+                RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
+            )
+            public_key_rqi = bfv_rqi.PublicKeyGen(secret_key, e)
+            ciphertext = bfv_rqi.Encrypt(
+                public_key_rqi, message, (e0, e1), u, self.delta
+            )
+            c0_rqis.append(ciphertext[0])
+            c1_rqis.append(ciphertext[1])
 
-# #         # Perform decryption in Rq basis
-# #         dec = bfv_rq.Decrypt(secret_key, (c0, c1), (e0, e1), e, u)
+        # Recover ciphertext in Rq
+        c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            c0_rqis, self.n, self.crt_moduli
+        )
+        c1 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            c1_rqis, self.n, self.crt_moduli
+        )
 
-# #         # Assert that the two decryptions are the same
-# #         self.assertEqual(dec.coefficients, message.coefficients)
+        # Perform decryption in Rq basis
+        dec = bfv_rq.Decrypt(secret_key, (c0, c1), (e0, e1), e, u)
+
+        # Assert that the two decryptions are the same
+        self.assertEqual(dec.coefficients, message.coefficients)

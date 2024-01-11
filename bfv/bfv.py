@@ -48,7 +48,9 @@ class RLWE:
 
         coefficients = np.random.choice([-1, 0, 1], size=self.n)
 
-        return Polynomial(coefficients)
+        coefficients_int = [int(coeff) for coeff in coefficients]
+
+        return Polynomial(coefficients_int)
 
     def SampleFromErrorDistribution(self) -> Polynomial:
         """
@@ -58,7 +60,10 @@ class RLWE:
         """
         # Sample a polynomial from the Error distribution
         coefficients = self.distribution.sample(self.n)
-        return Polynomial(coefficients)
+
+        coefficients_int = [int(coeff) for coeff in coefficients]
+
+        return Polynomial(coefficients_int)
 
     def is_prime(self, n):
         if n < 2:
@@ -88,7 +93,9 @@ class BFV:
 
         return self.rlwe.SampleFromTernaryDistribution()
 
-    def PublicKeyGen(self, s: Polynomial, e: Polynomial) -> (Polynomial, Polynomial):
+    def PublicKeyGen(
+        self, s: Polynomial, e: Polynomial
+    ) -> tuple[Polynomial, Polynomial]:
         """
         Generate a public key from a given secret key.
 
@@ -119,12 +126,12 @@ class BFV:
 
     def Encrypt(
         self,
-        public_key: (Polynomial, Polynomial),
+        public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
-        error: (Polynomial, Polynomial),
+        error: tuple[Polynomial, Polynomial],
         u: Polynomial,
         delta: int,
-    ) -> (Polynomial, Polynomial):
+    ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given public_key .
 
@@ -171,7 +178,7 @@ class BFV:
 
     def EncryptConst(
         self,
-        public_key: (Polynomial, Polynomial),
+        public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
         u: Polynomial,
         delta: int,
@@ -215,8 +222,8 @@ class BFV:
     def Decrypt(
         self,
         secret_key: Polynomial,
-        ciphertext: (Polynomial, Polynomial),
-        error: (Polynomial, Polynomial),
+        ciphertext: tuple[Polynomial, Polynomial],
+        error: tuple[Polynomial, Polynomial],
         e: Polynomial,
         u: Polynomial,
     ):
@@ -251,10 +258,10 @@ class BFV:
 
         threshold = q / (2 * t) - rt_Q / 2
 
-        for v in v.coefficients:
-            assert abs(v) < (
+        for coeff in v.coefficients:
+            assert abs(coeff) < (
                 threshold
-            ), f"Noise {abs(v)} exceeds the threshold value {threshold}, decryption won't work"
+            ), f"Noise {abs(coeff)} exceeds the threshold value {threshold}, decryption won't work"
 
         ct1_s = ct1 * s
 
@@ -272,17 +279,17 @@ class BFV:
         # trim leading zeros
         quotient = np.trim_zeros(quotient, "f")
 
-        quotient = Polynomial(quotient)
+        quotient_poly = Polynomial(quotient)
 
         # Reduce the quotient in Rt
-        quotient.reduce_in_ring(self.rlwe.Rt)
+        quotient_poly.reduce_in_ring(self.rlwe.Rt)
 
-        return quotient
+        return quotient_poly
 
     def EvalAdd(
         self,
-        ciphertext1: (Polynomial, Polynomial),
-        ciphertext2: (Polynomial, Polynomial),
+        ciphertext1: tuple[Polynomial, Polynomial],
+        ciphertext2: tuple[Polynomial, Polynomial],
     ):
         """
         Add two ciphertexts.

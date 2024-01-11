@@ -30,6 +30,7 @@ class CRTInteger:
         self.crt_moduli = crt_moduli
         self.xis = xis
 
+    @staticmethod
     def from_crt_components(crt_moduli: CRTModuli, xis: List[int]) -> "CRTInteger":
         """
         Initialize a CRTInteger object from the list of CRT components xis, which are integers in [0, qi) for each qi in qis, and the object CRTModuli, which contains the big modulus q and the list of small moduli qis.
@@ -42,6 +43,7 @@ class CRTInteger:
 
         return CRTInteger(crt_moduli, xis)
 
+    @staticmethod
     def from_integer(crt_moduli: CRTModuli, x: int) -> "CRTInteger":
         """
         Initialize a CRTInteger object from the integer x, which is in [0, q), and the object CRTModuli, which contains the big modulus q and the list of small moduli qis.
@@ -85,6 +87,7 @@ class CRTInteger:
 
 
 class CRTPolynomial:
+    @staticmethod
     def from_rq_polynomial_to_rqi_polynomials(
         rq_polynomial: Polynomial, n: int, crt_moduli: CRTModuli
     ) -> List[Polynomial]:
@@ -108,6 +111,7 @@ class CRTPolynomial:
 
         return rqi_polynomials
 
+    @staticmethod
     def from_rqi_polynomials_to_rq_polynomial(
         rqi_polynomials: List[Polynomial], n: int, crt_moduli: CRTModuli
     ) -> Polynomial:

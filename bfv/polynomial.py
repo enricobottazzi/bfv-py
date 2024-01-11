@@ -80,8 +80,6 @@ class Polynomial:
 
 
 def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[int]]:
-    dividend = [int(x) for x in dividend]
-
     # Initialize quotient and remainder
     quotient = [0] * (len(dividend) - len(divisor) + 1)
     remainder = list(dividend)

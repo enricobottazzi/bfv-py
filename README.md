@@ -40,4 +40,3 @@ $ python3 cli.py -n 1024 -q 1152921504606584833 -t 65537 --output input.json
 - [ ] Test Secret Key Encryption in RNS setting
 - [ ] Check error accumulation in RNS setting 
 - [ ] Test compatibility with circuit too (for limits of the coefficients)
-- [ ] Fix CLI
