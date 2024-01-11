@@ -133,7 +133,7 @@ class TestPolynomialWithCRT(unittest.TestCase):
         # ensure that a + b = c
         assert c.coefficients == c_recovered.coefficients
 
-    def test_valid_scalar_poly_mul_in_crt_representation(self):
+    def test_valid_poly_mul_in_crt_representation(self):
         a = self.rq.sample_polynomial()
         b = self.rq.sample_polynomial()
         c = a * b
