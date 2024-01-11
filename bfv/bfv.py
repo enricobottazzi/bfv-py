@@ -48,7 +48,7 @@ class RLWE:
 
         coefficients = np.random.choice([-1, 0, 1], size=self.n)
 
-        return Polynomial(coefficients, self.Rq)
+        return Polynomial(coefficients)
 
     def SampleFromErrorDistribution(self) -> Polynomial:
         """
@@ -58,7 +58,7 @@ class RLWE:
         """
         # Sample a polynomial from the Error distribution
         coefficients = self.distribution.sample(self.n)
-        return Polynomial(coefficients, self.Rq)
+        return Polynomial(coefficients)
 
     def is_prime(self, n):
         if n < 2:
@@ -108,11 +108,10 @@ class BFV:
 
         # pk0 is a polynomial in Rq
         pk0 = b
-        pk0.reduce_coefficients_by_cyclo()
-        pk0.reduce_coefficients_by_modulus()
+        pk0.reduce_in_ring(self.rlwe.Rq)
 
         # pk1 = -a.
-        pk1 = a * Polynomial([-1], self.rlwe.Rq)
+        pk1 = a * Polynomial([-1])
 
         public_key = (pk0, pk1)
 
@@ -131,7 +130,7 @@ class BFV:
 
         Parameters:
         - public_key: Public key.
-        - m: message.
+        - m: message. This must be a polynomial in Rt.
         - error: tuple of error values used in encryption. These must be polynomial sampled from the distribution χ Error.
         - u: ephermeral key polynomial sampled from the distribution χ Ternary.
         - delta: delta = q/t
@@ -139,9 +138,6 @@ class BFV:
         Returns:
         ciphertext: Generated ciphertext.
         """
-        # Ensure that the message is in Rt
-        if m.ring != self.rlwe.Rt:
-            raise AssertionError("The message must be in Rt.")
 
         # Polynomials e0, e1 are sampled the distribution χ Error
         e0 = error[0]
@@ -149,7 +145,7 @@ class BFV:
 
         # Compute the ciphertext.
         # delta * m
-        delta_m = Polynomial(delta, self.rlwe.Rq) * m
+        delta_m = Polynomial([delta]) * m
 
         # pk0 * u
         pk0_u = public_key[0] * u
@@ -158,8 +154,7 @@ class BFV:
         ct_0 = delta_m + pk0_u + e0
 
         # ct_0 will be in Rq
-        ct_0.reduce_coefficients_by_cyclo()
-        ct_0.reduce_coefficients_by_modulus()
+        ct_0.reduce_in_ring(self.rlwe.Rq)
 
         # pk1 * u
         pk1_u = public_key[1] * u
@@ -168,147 +163,143 @@ class BFV:
         ct_1 = pk1_u + e1
 
         # The result will be in Rq
-        ct_1.reduce_coefficients_by_cyclo()
-        ct_1.reduce_coefficients_by_modulus()
+        ct_1.reduce_in_ring(self.rlwe.Rq)
 
         ciphertext = (ct_0, ct_1)
 
         return ciphertext
 
-    # def EncryptConst(
-    #     self,
-    #     public_key: (Polynomial, Polynomial),
-    #     m: Polynomial,
-    #     u: Polynomial,
-    #     delta: int,
-    # ):
-    #     """
-    #     Encrypt a given message m with a given public_key setting e0 and e1 to 0. This is used for the constant multiplication and addition.
+    def EncryptConst(
+        self,
+        public_key: (Polynomial, Polynomial),
+        m: Polynomial,
+        u: Polynomial,
+        delta: int,
+    ):
+        """
+        Encrypt a given message m with a given public_key setting e0 and e1 to 0. This is used for the constant multiplication and addition.
 
-    #     Parameters:
-    #     - public_key: Public key.
-    #     - m: message.
-    #     - u: ephermeral key polynomial sampled from the distribution χ Ternary.
-    #     - delta: delta = q/t
+        Parameters:
+        - public_key: Public key.
+        - m: message.
+        - u: ephermeral key polynomial sampled from the distribution χ Ternary.
+        - delta: delta = q/t
 
-    #     Returns:
-    #     ciphertext: Generated ciphertext.
-    #     """
-    #     # Ensure that the message is in Rt
-    #     if m.ring != self.Rt:
-    #         raise AssertionError("The message must be in Rt.")
+        Returns:
+        ciphertext: Generated ciphertext.
+        """
 
-    #     # Compute the ciphertext.
-    #     # delta * m
-    #     delta_m = poly_mul([delta], m.coefficients)
-    #     # pk0 * u
-    #     pk0_u = poly_mul(public_key[0].coefficients, u.coefficients)
+        # Compute the ciphertext.
+        # delta * m
+        delta_m = Polynomial([delta]) * m
 
-    #     # ct_0 = delta * m + pk0 * u
-    #     ct_0 = poly_add(delta_m, pk0_u)
+        # pk0 * u
+        pk0_u = public_key[0] * u
 
-    #     # ct_0 will be in Rq
-    #     ct_0 = Polynomial(ct_0, self.Rq)
+        # ct_0 = delta * m + pk0 * u
+        ct_0 = delta_m + pk0_u
 
-    #     # ct_1 = pk1 * u
-    #     ct_1 = poly_mul(public_key[1].coefficients, u.coefficients)
+        # ct_0 will be in Rq
+        ct_0.reduce_in_ring(self.rlwe.Rq)
 
-    #     # ct_0 will be in Rq
-    #     ct_1 = Polynomial(ct_1, self.Rq)
+        # ct_1 = pk1 * u
+        ct_1 = public_key[1] * u
 
-    #     ciphertext = (ct_0, ct_1)
+        # ct_1 will be in Rq
+        ct_1.reduce_in_ring(self.rlwe.Rq)
 
-    #     return ciphertext
+        ciphertext = (ct_0, ct_1)
 
-    # def Decrypt(
-    #     self,
-    #     secret_key: Polynomial,
-    #     ciphertext: (Polynomial, Polynomial),
-    #     error: (Polynomial, Polynomial),
-    #     e: Polynomial,
-    #     u: Polynomial,
-    # ):
-    #     """
-    #     Decrypt a given ciphertext with a given secret key.
+        return ciphertext
 
-    #     Parameters:
-    #     - secret_key: Secret key.
-    #     - ciphertext: Ciphertext.
-    #     - error: tuple of error values used in encryption. This is used when calculating that the noise is small enough to decrypt the message.
-    #     - e: error polynomial sampled from the distribution χ Error. Used for public key generation. This is used when calculating that the noise is small enough to decrypt the message.
-    #     - u: ephermeral key polynomial sampled from the distribution χ Ternary. Used for encryption. This is used when calculating that the noise is small enough to decrypt the message.
+    def Decrypt(
+        self,
+        secret_key: Polynomial,
+        ciphertext: (Polynomial, Polynomial),
+        error: (Polynomial, Polynomial),
+        e: Polynomial,
+        u: Polynomial,
+    ):
+        """
+        Decrypt a given ciphertext with a given secret key.
 
-    #     Returns: Decrypted message.
-    #     """
-    #     # dec = round(t/q * ((ct0 + ct1*s) mod s)
-    #     ct0 = ciphertext[0].coefficients
-    #     ct1 = ciphertext[1].coefficients
-    #     s = secret_key.coefficients
-    #     t = self.Rt.modulus
-    #     q = self.Rq.modulus
+        Parameters:
+        - secret_key: Secret key.
+        - ciphertext: Ciphertext.
+        - error: tuple of error values used in encryption. This is used when calculating that the noise is small enough to decrypt the message.
+        - e: error polynomial sampled from the distribution χ Error. Used for public key generation. This is used when calculating that the noise is small enough to decrypt the message.
+        - u: ephermeral key polynomial sampled from the distribution χ Ternary. Used for encryption. This is used when calculating that the noise is small enough to decrypt the message.
 
-    #     ct1_s = poly_mul(ct1, s)
+        Returns: Decrypted message.
+        """
+        # dec = round(t/q * ((ct0 + ct1*s))
+        ct0 = ciphertext[0]
+        ct1 = ciphertext[1]
+        s = secret_key
+        t = self.rlwe.Rt.modulus
+        q = self.rlwe.Rq.modulus
 
-    #     # ct0 + ct1*s
-    #     numerator_1 = poly_add(ct0, ct1_s)
+        # Ensure that all the errors v < q/(2t) - 1/2
+        # v = u * e + e0 + s * e1
+        u_e = u * e
+        s_e1 = s * error[1]
 
-    #     # Ensure that all the errors v < q/(2t) - 1/2
-    #     # v = u * e + e0 + s * e1
-    #     u_e = poly_mul(u.coefficients, e.coefficients)
-    #     s_e1 = poly_mul(s, error[1].coefficients)
+        v = u_e + error[0]
+        v = v + s_e1
 
-    #     v = poly_add(u_e, error[0].coefficients)
-    #     v = poly_add(v, s_e1)
+        rt_Q = q % t
 
-    #     # fresh error v is in Rq
-    #     v = Polynomial(v, self.Rq)
+        threshold = q / (2 * t) - rt_Q / 2
 
-    #     rt_Q = q % t
+        for v in v.coefficients:
+            assert abs(v) < (
+                threshold
+            ), f"Noise {abs(v)} exceeds the threshold value {threshold}, decryption won't work"
 
-    #     threshold = q / (2 * t) - rt_Q / 2
+        ct1_s = ct1 * s
 
-    #     for v in v.coefficients:
-    #         assert abs(v) < (
-    #             threshold
-    #         ), f"Noise {abs(v)} exceeds the threshold value {threshold}, decryption won't work"
+        # ct0 + ct1*s
+        numerator_1 = ct0 + ct1_s
 
-    #     # Numerator 1 is in Rq.
-    #     numerator_1 = Polynomial(numerator_1, self.Rq)
+        # Reduce numerator_1 in Rq
+        numerator_1.reduce_in_ring(self.rlwe.Rq)
 
-    #     numerator = poly_mul([t], numerator_1.coefficients)
+        numerator = Polynomial([t]) * numerator_1
 
-    #     # For each coefficient of the numerator, divide it by q and round it to the nearest integer
-    #     quotient = [round(coeff / q) for coeff in numerator]
+        # For each coefficient of the numerator, divide it by q and round it to the nearest integer
+        quotient = [round(coeff / q) for coeff in numerator.coefficients]
 
-    #     # trim leading zeros
-    #     quotient = np.trim_zeros(quotient, "f")
+        # trim leading zeros
+        quotient = np.trim_zeros(quotient, "f")
 
-    #     # quotient is in Rt
-    #     quotient = Polynomial(quotient, self.Rt)
+        quotient = Polynomial(quotient)
 
-    #     return quotient
+        # Reduce the quotient in Rt
+        quotient.reduce_in_ring(self.rlwe.Rt)
 
-    # def EvalAdd(
-    #     self,
-    #     ciphertext1: (Polynomial, Polynomial),
-    #     ciphertext2: (Polynomial, Polynomial),
-    # ):
-    #     """
-    #     Add two ciphertexts.
+        return quotient
 
-    #     Parameters:
-    #     - ciphertext1: First ciphertext.
-    #     - ciphertext2: Second ciphertext.
+    def EvalAdd(
+        self,
+        ciphertext1: (Polynomial, Polynomial),
+        ciphertext2: (Polynomial, Polynomial),
+    ):
+        """
+        Add two ciphertexts.
 
-    #     Returns:
-    #     ciphertext_sum: Sum of the two ciphertexts.
-    #     """
-    #     # ct1_0 + ct2_0
-    #     ct0 = poly_add(ciphertext1[0].coefficients, ciphertext2[0].coefficients)
-    #     ct0 = Polynomial(ct0, self.Rq)
+        Parameters:
+        - ciphertext1: First ciphertext.
+        - ciphertext2: Second ciphertext.
 
-    #     # ct1_1 + ct2_1
-    #     ct1 = poly_add(ciphertext1[1].coefficients, ciphertext2[1].coefficients)
-    #     ct1 = Polynomial(ct1, self.Rq)
+        Returns:
+        ciphertext_sum: Sum of the two ciphertexts.
+        """
+        # ct1_0 + ct2_0
+        ct0 = ciphertext1[0] + ciphertext2[0]
+        ct0.reduce_in_ring(self.rlwe.Rq)
 
-    #     return (ct0, ct1)
+        # ct1_1 + ct2_1
+        ct1 = ciphertext1[1] + ciphertext2[1]
+        ct1.reduce_in_ring(self.rlwe.Rq)
+
+        return (ct0, ct1)
