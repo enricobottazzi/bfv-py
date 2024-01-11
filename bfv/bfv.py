@@ -1,4 +1,4 @@
-from .polynomial import PolynomialRing, Polynomial, poly_mul, poly_add
+from .polynomial import PolynomialRing, Polynomial, mod_inverse
 from .discrete_gauss import DiscreteGaussian
 import numpy as np
 
@@ -130,7 +130,7 @@ class BFV:
         m: Polynomial,
         error: tuple[Polynomial, Polynomial],
         u: Polynomial,
-        delta: int,
+        q: int,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given public_key .
@@ -140,7 +140,7 @@ class BFV:
         - m: message. This must be a polynomial in Rt.
         - error: tuple of error values used in encryption. These must be polynomial sampled from the distribution χ Error.
         - u: ephermeral key polynomial sampled from the distribution χ Ternary.
-        - delta: delta = q/t
+        - q: modulus q of the ciphertext space
 
         Returns:
         ciphertext: Generated ciphertext.
@@ -151,14 +151,19 @@ class BFV:
         e1 = error[1]
 
         # Compute the ciphertext.
-        # delta * m
-        delta_m = Polynomial([delta]) * m
+        # Q[m]
+        q_m = Polynomial([q]) * m
+
+        # Q[m]/t rounded to the nearest integer
+        scaled_message = Polynomial(
+            [round(coeff / self.rlwe.Rt.modulus) for coeff in q_m.coefficients]
+        )
 
         # pk0 * u
         pk0_u = public_key[0] * u
 
-        # delta * m + pk0 * u + e0
-        ct_0 = delta_m + pk0_u + e0
+        # scaled_message + pk0 * u + e0
+        ct_0 = scaled_message + pk0_u + e0
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -181,7 +186,7 @@ class BFV:
         secret_key: Polynomial,
         m: Polynomial,
         e: Polynomial,
-        delta: int,
+        q: int,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given secret key .
@@ -190,15 +195,21 @@ class BFV:
         - secret_key: Public key.
         - m: message. This must be a polynomial in Rt.
         - e: error polynomial sampled from the distribution χ Error.
-        - delta: delta = q/t
+        - q: modulus q of the ciphertext space
 
         Returns:
         ciphertext: Generated ciphertext.
         """
 
         # Compute the ciphertext.
-        # delta * m
-        delta_m = Polynomial([delta]) * m
+        # Compute the ciphertext.
+        # Q[m]
+        q_m = Polynomial([q]) * m
+
+        # Q[m]/t rounded to the nearest integer
+        scaled_message = Polynomial(
+            [round(coeff / self.rlwe.Rt.modulus) for coeff in q_m.coefficients]
+        )
 
         # Sample a polynomial a from Rq
         a = self.rlwe.Rq.sample_polynomial()
@@ -209,8 +220,8 @@ class BFV:
         # b = a*s + e.
         b = mul + e
 
-        # ct_0 = delta_m + b
-        ct_0 = delta_m + b
+        # ct_0 = scaled_message + b
+        ct_0 = scaled_message + b
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -292,7 +303,7 @@ class BFV:
         t = self.rlwe.Rt.modulus
         q = self.rlwe.Rq.modulus
 
-        # Ensure that all the errors v < q/(2t) - rt_Q/2 (check section 2.2.2 of 2021/204)
+        # Ensure that all the errors v < q/(2t) - 1/2 (check section 3.1 of 2021/204)
         # v = u * e + e0 + s * e1
         u_e = u * e
         s_e1 = s * error[1]
@@ -300,9 +311,7 @@ class BFV:
         v = u_e + error[0]
         v = v + s_e1
 
-        rt_Q = q % t
-
-        threshold = q / (2 * t) - rt_Q / 2
+        threshold = q / (2 * t) - 1 / 2
 
         for coeff in v.coefficients:
             assert abs(coeff) < (
