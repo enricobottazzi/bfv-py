@@ -1,4 +1,4 @@
-from .polynomial import PolynomialRing, Polynomial, mod_inverse
+from .polynomial import PolynomialRing, Polynomial
 from .discrete_gauss import DiscreteGaussian
 import numpy as np
 
@@ -201,7 +201,6 @@ class BFV:
         ciphertext: Generated ciphertext.
         """
 
-        # Compute the ciphertext.
         # Compute the ciphertext.
         # Q[m]
         q_m = Polynomial([q]) * m

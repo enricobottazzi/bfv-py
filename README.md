@@ -35,6 +35,4 @@ $ python3 cli.py -n 1024 -q 1152921504606584833 -t 65537 --output input.json
 
 # TODOS
 
-- [ ] Compute Q[m]/t directly in the RNS space
-- [ ] Check error accumulation in RNS setting 
 - [ ] Test compatibility with circuit too (for limits of the coefficients)

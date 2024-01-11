@@ -53,10 +53,9 @@ def main(args):
     e0 = bfv.rlwe.SampleFromErrorDistribution()
     e1 = bfv.rlwe.SampleFromErrorDistribution()
     error = (e0, e1)
-    delta = int(math.floor(q / t))
 
     # Encrypt message
-    ciphertext = bfv.PubKeyEncrypt(public_key, message, error, u, delta)
+    ciphertext = bfv.PubKeyEncrypt(public_key, message, error, u, q)
 
     encrypt_end_time = time.time()
     encrypt_elapsed_time = encrypt_end_time - encrypt_start_time
