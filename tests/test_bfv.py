@@ -357,6 +357,3 @@
 # #         # Assert that the two decryptions are the same
 # #         self.assertEqual(dec.coefficients, message.coefficients)
 
-
-# # if __name__ == "__main__":
-# #     unittest.main()
