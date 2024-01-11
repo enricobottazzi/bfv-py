@@ -28,5 +28,20 @@ The script will run through the following steps:
 
 ```bash
 $ python3 cli.py --help
+<<<<<<< Updated upstream
 $ python3 cli.py -n 1024 -q 536870909 -t 257 --output input.json
 ```
+=======
+$ python3 cli.py -n 1024 -q 1152921504606584833 -t 65537 --output input.json
+```
+
+### TO DOs
+
+- [ ] Add secret key encryption
+- [ ] Add technique to dimish noise accumulation during encryption
+- [ ] Separate bfv from rlwe instance 
+- [ ] Test Secret Key Encryption in RNS setting
+- [ ] Check error accumulation in RNS setting 
+- [ ] Test typing
+- [ ] Test compatibility with circuit too (for limits of the coefficients)
+>>>>>>> Stashed changes
