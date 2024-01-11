@@ -292,7 +292,7 @@ class BFV:
         t = self.rlwe.Rt.modulus
         q = self.rlwe.Rq.modulus
 
-        # Ensure that all the errors v < q/(2t) - 1/2
+        # Ensure that all the errors v < q/(2t) - rt_Q/2 (check section 2.2.2 of 2021/204)
         # v = u * e + e0 + s * e1
         u_e = u * e
         s_e1 = s * error[1]
