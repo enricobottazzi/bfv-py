@@ -158,9 +158,7 @@ class TestBFV(unittest.TestCase):
         message = self.bfv.rlwe.Rt.sample_polynomial()
         e = self.bfv.rlwe.SampleFromErrorDistribution()
 
-        ciphertext = self.bfv.SecretKeyEncrypt(
-            secret_key, message, e, self.bfv.rlwe.Rq.modulus
-        )
+        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message, e, self.bfv.rlwe.Rq.modulus)
 
         dec = self.bfv.SecretKeyDecrypt(secret_key, ciphertext, e)
 
@@ -370,9 +368,7 @@ class TestBFVVWithCRT(unittest.TestCase):
                 RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
             )
             public_key_rqi = bfv_rqi.PublicKeyGen(secret_key, e)
-            ciphertext = bfv_rqi.PubKeyEncrypt(
-                public_key_rqi, message, (e0, e1), u, self.crt_moduli.q
-            )
+            ciphertext = bfv_rqi.PubKeyEncrypt(public_key_rqi, message, (e0, e1), u, self.crt_moduli.q)
             c0_rqis.append(ciphertext[0])
             c1_rqis.append(ciphertext[1])
 
@@ -390,6 +386,7 @@ class TestBFVVWithCRT(unittest.TestCase):
         # Assert that the two decryptions are the same
         self.assertEqual(dec.coefficients, message.coefficients)
 
+
     # Same as before, but now using secret key encryption
     def test_valid_secret_key_decryption(self):
         bfv_rq = BFV(RLWE(self.n, self.crt_moduli.q, self.t, self.discrete_gaussian))
@@ -406,9 +403,7 @@ class TestBFVVWithCRT(unittest.TestCase):
             bfv_rqi = BFV(
                 RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
             )
-            ciphertext = bfv_rqi.SecretKeyEncrypt(
-                secret_key, message, e, self.crt_moduli.q
-            )
+            ciphertext = bfv_rqi.SecretKeyEncrypt(secret_key, message, e, self.crt_moduli.q)
             c0_rqis.append(ciphertext[0])
             c1_rqis.append(ciphertext[1])
 
