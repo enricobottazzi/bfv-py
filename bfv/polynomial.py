@@ -130,16 +130,20 @@ def poly_mul(poly1: list[int], poly2: list[int]) -> list[int]:
 
 
 def poly_add(poly1: list[int], poly2: list[int]) -> list[int]:
+    # convert coefficients to integers
+    poly1 = [int(coeff) for coeff in poly1]
+    poly2 = [int(coeff) for coeff in poly2]
+
     # The degree of the sum polynomial is the max of the degrees of the input polynomials
     result_degree = max(len(poly1), len(poly2))
     # Initialize the sum polynomial with zeros
-    sum = [0] * result_degree
+    sum = [0] * int(result_degree)
 
     for i in range(len(poly1)):
-        sum[i + result_degree - len(poly1)] += poly1[i]
+        sum[i + int(result_degree) - len(poly1)] += int(poly1[i])
 
     for i in range(len(poly2)):
-        sum[i + result_degree - len(poly2)] += poly2[i]
+        sum[i + int(result_degree) - len(poly2)] += int(poly2[i])
 
     return sum
 
@@ -151,3 +155,9 @@ def get_centered_remainder(x, modulus) -> int:
     r = x % modulus
     return r if r <= modulus / 2 else r - modulus
 
+def get_standard_form(x, modulus) -> int:
+    """
+    Returns the standard form of x with respect to modulus.
+    """
+    r = x % modulus
+    return r if r >= 0 else r + modulus
