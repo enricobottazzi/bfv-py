@@ -5,6 +5,7 @@ from bfv.polynomial import (
     Polynomial,
     get_centered_remainder,
 )
+import random
 
 
 class TestPolynomialRing(unittest.TestCase):
@@ -108,11 +109,30 @@ class TestPolynomialInRingRq(unittest.TestCase):
         assert result.coefficients == [1, -1, 0, 1]
 
     def test_poly_eval(self):
-        coefficients = [4, 3, 0, 4]
-        aq1 = Polynomial(coefficients)
+        # random sample 100 coefficients in the range 0, 1152921504606584833
+        coefficients_1 = []
+        for i in range(1024):
+            coefficients_1.append(random.randint(0, 1152921504606584833))
+        
+        coefficients_2 = []
+        for i in range(1024):
+            coefficients_2.append(random.randint(0, 1152921504606584833))
 
-        result = aq1.evaluate(2)
-        assert result == 42
+        aq1 = Polynomial(coefficients_1)
+        aq2 = Polynomial(coefficients_2)
+
+        # aq1 * aq2
+        result = aq1 * aq2
+
+        # evaluate the polynomial at a random x
+        x = random.randint(0, 1152921504606584833)
+        result = result.evaluate(x)
+
+        aq1 = aq1.evaluate(x)
+        aq2 = aq2.evaluate(x)
+
+        # check if the result is equal to the product of the two polynomials evaluated at x
+        assert result == aq1 * aq2
 
 
 class TestCenteredRemainder(unittest.TestCase):
