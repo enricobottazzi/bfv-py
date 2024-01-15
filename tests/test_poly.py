@@ -57,6 +57,14 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         self.assertTrue(np.array_equal(a.coefficients, [0, 1, 0]))
 
+    def test_add_poly(self):
+        coefficients_1 = [3, 3, 4, 4, 4]
+        coefficients_2 = [3, 3, 2, 0, 1]
+        aq1 = Polynomial(coefficients_1)
+        aq2 = Polynomial(coefficients_2)
+        result = aq1 + aq2
+        assert result.coefficients == [6, 6, 6, 4, 5]
+
     def test_add_poly_in_ring_Rq(self):
         n = 4
         q = 7

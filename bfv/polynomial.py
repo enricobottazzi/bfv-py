@@ -130,22 +130,17 @@ def poly_mul(poly1: list[int], poly2: list[int]) -> list[int]:
 
 
 def poly_add(poly1: list[int], poly2: list[int]) -> list[int]:
-    # convert coefficients to integers
-    poly1 = [int(coeff) for coeff in poly1]
-    poly2 = [int(coeff) for coeff in poly2]
+    # Find the length of the longer polynomial
+    max_length = max(len(poly1), len(poly2))
+    
+    # Pad the shorter polynomial with zeros at the beginning
+    poly1 = [0] * (max_length - len(poly1)) + poly1
+    poly2 = [0] * (max_length - len(poly2)) + poly2
 
-    # The degree of the sum polynomial is the max of the degrees of the input polynomials
-    result_degree = max(len(poly1), len(poly2))
-    # Initialize the sum polynomial with zeros
-    sum = [0] * int(result_degree)
-
-    for i in range(len(poly1)):
-        sum[i + int(result_degree) - len(poly1)] += int(poly1[i])
-
-    for i in range(len(poly2)):
-        sum[i + int(result_degree) - len(poly2)] += int(poly2[i])
-
-    return sum
+    # Add corresponding coefficients
+    result = [poly1[i] + poly2[i] for i in range(max_length)]
+    
+    return result
 
 
 def get_centered_remainder(x, modulus) -> int:
