@@ -107,6 +107,13 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         assert result.coefficients == [1, -1, 0, 1]
 
+    def test_poly_eval(self):
+        coefficients = [4, 3, 0, 4]
+        aq1 = Polynomial(coefficients)
+
+        result = aq1.evaluate(2)
+        assert result == 42
+
 
 class TestCenteredRemainder(unittest.TestCase):
     def test_positive_values(self):

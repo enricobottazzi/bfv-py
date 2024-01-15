@@ -77,6 +77,15 @@ class Polynomial:
 
     def __mul__(self, other) -> "Polynomial":
         return Polynomial(poly_mul(self.coefficients, other.coefficients))
+    
+    def evaluate(self, x: int) -> int:
+        """
+        Evaluate the polynomial at x.
+        """
+        result = 0
+        for coeff in reversed(self.coefficients):
+            result = result * x + coeff
+        return result
 
 
 def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[int]]:
