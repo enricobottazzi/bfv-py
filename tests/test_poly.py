@@ -59,11 +59,12 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
     def test_add_poly(self):
         coefficients_1 = [3, 3, 4, 4, 4]
-        coefficients_2 = [3, 3, 2, 0, 1]
+        coefficients_2 = [3, 2, 0, 1]
         aq1 = Polynomial(coefficients_1)
         aq2 = Polynomial(coefficients_2)
         result = aq1 + aq2
-        assert result.coefficients == [6, 6, 6, 4, 5]
+        assert result.coefficients == [3, 6, 6, 4, 5]
+
 
     def test_add_poly_in_ring_Rq(self):
         n = 4
@@ -117,7 +118,7 @@ class TestPolynomialInRingRq(unittest.TestCase):
         assert result.coefficients == [1, -1, 0, 1]
 
     def test_poly_eval(self):
-        # random sample 100 coefficients in the range 0, 1152921504606584833
+        # random sample 1024 coefficients in the range 0, 1152921504606584833
         coefficients_1 = []
         for i in range(1024):
             coefficients_1.append(random.randint(0, 1152921504606584833))
@@ -126,11 +127,16 @@ class TestPolynomialInRingRq(unittest.TestCase):
         for i in range(1024):
             coefficients_2.append(random.randint(0, 1152921504606584833))
 
+        coefficients_3 = []
+        for i in range(1024):
+            coefficients_3.append(random.randint(0, 1152921504606584833))
+
         aq1 = Polynomial(coefficients_1)
         aq2 = Polynomial(coefficients_2)
+        aq3 = Polynomial(coefficients_3)
 
-        # aq1 * aq2
-        result = aq1 * aq2
+        # aq1 + aq2 * aq3
+        result = aq1 + aq2 * aq3
 
         # evaluate the polynomial at a random x
         x = random.randint(0, 1152921504606584833)
@@ -138,11 +144,12 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         aq1 = aq1.evaluate(x)
         aq2 = aq2.evaluate(x)
+        aq3 = aq3.evaluate(x)
 
-        # check if the result is equal to the product of the two polynomials evaluated at x
-        assert result == aq1 * aq2
+        # check if the result is equal to the sum of the two polynomials evaluated at x
+        assert result == aq1 + aq2 * aq3
 
-
+        
 class TestCenteredRemainder(unittest.TestCase):
     def test_positive_values(self):
         self.assertEqual(

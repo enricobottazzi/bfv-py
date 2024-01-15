@@ -83,7 +83,7 @@ class Polynomial:
         Evaluate the polynomial at x.
         """
         result = 0
-        for coeff in reversed(self.coefficients):
+        for coeff in self.coefficients:
             result = result * x + coeff
         return result
 
