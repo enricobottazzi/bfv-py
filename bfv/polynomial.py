@@ -86,6 +86,11 @@ class Polynomial:
         for coeff in self.coefficients:
             result = result * x + coeff
         return result
+    
+    def __eq__(self, other) -> bool:
+        if isinstance(other, Polynomial):
+            return self.coefficients == other.coefficients
+        return False
 
 
 def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[int]]:
