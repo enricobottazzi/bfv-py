@@ -187,6 +187,7 @@ class BFV:
         m: Polynomial,
         e: Polynomial,
         q: int,
+        a: Polynomial,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given secret key .
@@ -196,22 +197,20 @@ class BFV:
         - m: message. This must be a polynomial in Rt.
         - e: error polynomial sampled from the distribution χ Error.
         - q: modulus q of the ciphertext space
+        - a: polynomial sampled from the ring Rq.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
 
-        # Compute the ciphertext.
-        # Q[m]
-        q_m = Polynomial([q]) * m
+        # k^{0} = -t^{-1} namely the multiplicative inverse of t modulo q
+        k0 = mod_inverse(self.rlwe.Rt.modulus, self.rlwe.Rq.modulus) * (-1)
 
-        # Q[m]/t rounded to the nearest integer
-        scaled_message = Polynomial(
-            [round(coeff / self.rlwe.Rt.modulus) for coeff in q_m.coefficients]
-        )
+        # k^{1} = [QM]t namely the scaled message polynomial
+        k1 = Polynomial([q]) * m
 
-        # Sample a polynomial a from Rq
-        a = self.rlwe.Rq.sample_polynomial()
+        # reduce k^{1} in Rt
+        k1.reduce_in_ring(self.rlwe.Rt)
 
         # a * s
         mul = a * secret_key
@@ -219,8 +218,8 @@ class BFV:
         # b = a*s + e.
         b = mul + e
 
-        # ct_0 = scaled_message + b
-        ct_0 = scaled_message + b
+        # ct_0 = b + k^{0}k^{1}
+        ct_0 = b + (Polynomial([k0]) * k1)
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -418,3 +417,26 @@ class BFV:
         ct1.reduce_in_ring(self.rlwe.Rq)
 
         return (ct0, ct1)
+
+
+def mod_inverse(t, q):
+    """
+    Computes the multiplicative inverse of t modulo q.
+    Returns the inverse, or raises an exception if it doesn't exist.
+    """
+    g, x, _ = extended_gcd(t, q)
+    if g != 1:
+        raise ValueError("The multiplicative inverse does not exist")
+    else:
+        return x % q
+
+def extended_gcd(a, b):
+    """
+    Computes the greatest common divisor of a and b.
+    Returns a tuple (g, x, y) such that a*x + b*y = g = gcd(a, b).
+    """
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        g, y, x = extended_gcd(b % a, a)
+        return (g, x - (b // a) * y, y)

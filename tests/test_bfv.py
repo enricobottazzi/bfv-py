@@ -157,8 +157,9 @@ class TestBFV(unittest.TestCase):
         secret_key = self.bfv.SecretKeyGen()
         message = self.bfv.rlwe.Rt.sample_polynomial()
         e = self.bfv.rlwe.SampleFromErrorDistribution()
+        a = self.bfv.rlwe.Rq.sample_polynomial()
 
-        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message, e, self.bfv.rlwe.Rq.modulus)
+        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message, e, self.bfv.rlwe.Rq.modulus, a)
 
         dec = self.bfv.SecretKeyDecrypt(secret_key, ciphertext, e)
 
@@ -403,7 +404,8 @@ class TestBFVVWithCRT(unittest.TestCase):
             bfv_rqi = BFV(
                 RLWE(self.n, self.crt_moduli.qis[i], self.t, self.discrete_gaussian)
             )
-            ciphertext = bfv_rqi.SecretKeyEncrypt(secret_key, message, e, self.crt_moduli.q)
+            a = bfv_rqi.rlwe.Rq.sample_polynomial()
+            ciphertext = bfv_rqi.SecretKeyEncrypt(secret_key, message, e, self.crt_moduli.q, a)
             c0_rqis.append(ciphertext[0])
             c1_rqis.append(ciphertext[1])
 
