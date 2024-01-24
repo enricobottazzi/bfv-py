@@ -7,6 +7,8 @@ from bfv.polynomial import (
 )
 import random
 
+from bfv.utils import adjust_negative_coefficients
+
 
 class TestPolynomialRing(unittest.TestCase):
     def test_init_with_n_and_q(self):
@@ -154,24 +156,43 @@ class TestPolynomialInRingRq(unittest.TestCase):
         
 class TestCenteredRemainder(unittest.TestCase):
     # For modulus 7, the centered remainder range in which the coefficients of the polynomial should lie is [-3, 3]
+    # When applying the function adjust_negative_coefficients, the coefficients should be adjusted back
     def test_positive_values(self):
         self.assertEqual(
             get_centered_remainder(3, 7), 3
         )
         self.assertEqual(
+            adjust_negative_coefficients(Polynomial([3]), 7).coefficients, [3]
+        )
+        self.assertEqual(
             get_centered_remainder(15, 7), 1
-        )  
+        )
+        self.assertEqual(
+            adjust_negative_coefficients(Polynomial([1]), 7).coefficients, [15 % 7]
+        )
         self.assertEqual(
             get_centered_remainder(6, 7), -1
         )  # 6 % 7 = 6, which is > 3. So, 6 - 7 = -1
+        self.assertEqual(
+            adjust_negative_coefficients(Polynomial([-1]), 7).coefficients, [6]
+        )
 
     def test_negative_values(self):
         self.assertEqual(get_centered_remainder(-8, 7), -1)
         self.assertEqual(
+            adjust_negative_coefficients(Polynomial([-1]), 7).coefficients, [-8 % 7]
+        )
+        self.assertEqual(
             get_centered_remainder(-15, 7), -1
         ) 
         self.assertEqual(
+            adjust_negative_coefficients(Polynomial([-1]), 7).coefficients, [-15 % 7]
+        )
+        self.assertEqual(
             get_centered_remainder(-17, 7), -3
+        )
+        self.assertEqual(
+            adjust_negative_coefficients(Polynomial([-3]), 7).coefficients, [-17 % 7]
         )
 
     def test_boundary_values(self):
@@ -180,10 +201,20 @@ class TestCenteredRemainder(unittest.TestCase):
             get_centered_remainder(- (q - 1) / 2, q), - (q - 1) / 2, q
         )
         self.assertEqual(
+            adjust_negative_coefficients(Polynomial([-(q - 1) / 2]), q).coefficients, [-(q - 1) / 2 % q]
+        )
+        self.assertEqual(
             get_centered_remainder((q - 1) / 2, q), (q - 1) / 2
+        )
+        self.assertEqual(
+            adjust_negative_coefficients(Polynomial([(q - 1) / 2]), q).coefficients, [(q - 1) / 2 % q]
         )
 
     def test_zero(self):
         self.assertEqual(
             get_centered_remainder(0, 7), 0
         )
+        self.assertEqual(
+            adjust_negative_coefficients(Polynomial([0]), 7).coefficients, [0]
+        )
+
