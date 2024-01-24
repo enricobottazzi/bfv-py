@@ -1,5 +1,6 @@
 import argparse
 import json
+from bfv.polynomial import Polynomial
 from bfv.utils import adjust_negative_coefficients
 
 import numpy as np
@@ -82,15 +83,15 @@ def main(args):
     with open(args.output, "w") as f:
         json.dump(
             {
-                "pk0": adjust_negative_coefficients(public_key[0].coefficients, q),
-                "pk1": adjust_negative_coefficients(public_key[1].coefficients, q),
-                "m": adjust_negative_coefficients(message.coefficients.tolist(), q),
-                "u": adjust_negative_coefficients(u.coefficients.tolist(), q),
-                "e0": adjust_negative_coefficients(e0.coefficients, q),
-                "e1": adjust_negative_coefficients(e1.coefficients, q),
-                "c0": adjust_negative_coefficients(c0.coefficients, q),
-                "c1": adjust_negative_coefficients(c1.coefficients, q),
-                "cyclo": adjust_negative_coefficients(bfv.rlwe.Rq.denominator, q),
+                "pk0": adjust_negative_coefficients(public_key[0], q).coefficients,
+                "pk1": adjust_negative_coefficients(public_key[1], q).coefficients,
+                "m": adjust_negative_coefficients(message, q).coefficients,
+                "u": adjust_negative_coefficients(u, q).coefficients,
+                "e0": adjust_negative_coefficients(e0, q).coefficients,
+                "e1": adjust_negative_coefficients(e1, q).coefficients,
+                "c0": adjust_negative_coefficients(c0, q).coefficients,
+                "c1": adjust_negative_coefficients(c1, q).coefficients,
+                "cyclo": adjust_negative_coefficients(Polynomial(bfv.rlwe.Rq.denominator), q).coefficients,
             },
             f,
         )

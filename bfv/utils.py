@@ -1,3 +1,5 @@
+from bfv.polynomial import Polynomial
+
 def mod_inverse(t, q):
     """
     Computes the multiplicative inverse of t modulo q.
@@ -20,5 +22,8 @@ def extended_gcd(a, b):
         g, y, x = extended_gcd(b % a, a)
         return (g, x - (b // a) * y, y)
     
-def adjust_negative_coefficients(coefficients, modulus):
-    return [str(modulus + coeff if coeff < 0 else coeff) for coeff in coefficients]
+def adjust_negative_coefficients(poly : Polynomial, modulus: int) -> Polynomial:
+    """
+    Adjust the coefficients of the polynomial to be positive.
+    """
+    return Polynomial([(modulus + coeff if coeff < 0 else coeff) for coeff in poly.coefficients])
