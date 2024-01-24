@@ -1,10 +1,10 @@
 import random
 
-
 class PolynomialRing:
     def __init__(self, n: int, modulus: int) -> None:
         """
         Initialize a polynomial ring R_modulus = Z_modulus[x]/f(x) where f(x)=x^n+1.
+        - modulus is a prime number.
         - n is a power of 2.
         """
 
@@ -22,11 +22,14 @@ class PolynomialRing:
         """
 
         # range for random.randint
-        lower_bound = -self.modulus // 2  # exclusive
-        upper_bound = self.modulus // 2  # inclusive
+        lower_bound = - (self.modulus - 1) / 2 # inclusive
+        upper_bound = (self.modulus - 1) / 2 # inclusive
 
-        # generate n random coefficients in the range (lower_bound, upper_bound]
-        coeffs = [random.randint(lower_bound + 1, upper_bound) for _ in range(self.n)]
+        # assert that the bounds float are integers namely the decimal part is 0
+        assert lower_bound % 1 == 0 and upper_bound % 1 == 0
+    
+        # generate n random coefficients in the range [lower_bound, upper_bound]
+        coeffs = [random.randint(int(lower_bound), int(upper_bound)) for _ in range(self.n)]
 
         return Polynomial(coeffs)
 

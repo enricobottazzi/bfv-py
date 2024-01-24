@@ -1,4 +1,3 @@
-from bfv.crt import CRTModuli
 from .polynomial import PolynomialRing, Polynomial
 from .discrete_gauss import DiscreteGaussian
 from .utils import mod_inverse
@@ -28,9 +27,6 @@ class RLWE:
         # Ensure that p and q are greater than 1
         assert q > 1, "modulus q must be > 1"
         assert t > 1, "modulus t must be > 1"
-
-        # Ensure that t is a prime number
-        assert self.is_prime(t), "modulus t must be a prime number"
 
         # Ensure that q and t are coprime
         assert np.gcd(q, t) == 1, "modulus q and t must be coprime"
@@ -66,15 +62,6 @@ class RLWE:
         coefficients_int = [int(coeff) for coeff in coefficients]
 
         return Polynomial(coefficients_int)
-
-    def is_prime(self, n):
-        if n < 2:
-            return False
-        for i in range(2, n):
-            if n % i == 0:
-                return False
-        return True
-
 
 class BFV:
     def __init__(self, rlwe: RLWE):

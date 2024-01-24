@@ -19,17 +19,19 @@ class TestPolynomialRing(unittest.TestCase):
         self.assertEqual(Rq.n, n)
 
     def test_sample_poly_from_rq(self):
-        n = 4
-        q = 8
+        n = 1024
+        q = 7
         Rq = PolynomialRing(n, q)
         aq1 = Rq.sample_polynomial()
         aq2 = Rq.sample_polynomial()
 
-        # Ensure that the coefficients of the polynomial are within Z_q = (-q/2, q/2]
+        # Ensure that the coefficients of the polynomial are within the range [-(q-1)/2, (q-1)/2]
+        lower_bound = -(q - 1) / 2 # inclusive
+        upper_bound = (q - 1) / 2 # inclusive
         for coeff in aq1.coefficients:
-            self.assertTrue(coeff > -q // 2 and coeff <= q // 2)
+            self.assertTrue(coeff >= lower_bound and coeff <= upper_bound)
         for coeff in aq2.coefficients:
-            self.assertTrue(coeff > -q // 2 and coeff <= q // 2)
+            self.assertTrue(coeff >= lower_bound and coeff <= upper_bound)
 
         # Ensure that the degree of the sampled poly is equal or less than d (it might be less if the leading coefficient sampled is 0)
         count1 = 0
@@ -151,36 +153,37 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         
 class TestCenteredRemainder(unittest.TestCase):
+    # For modulus 7, the centered remainder range in which the coefficients of the polynomial should lie is [-3, 3]
     def test_positive_values(self):
         self.assertEqual(
-            get_centered_remainder(7, 10), -3
-        )  # 7 % 10. Lies in the range (-5, 5]
+            get_centered_remainder(3, 7), 3
+        )
         self.assertEqual(
-            get_centered_remainder(15, 10), 5
-        )  # 15 % 10 = 5, which is <= 5
+            get_centered_remainder(15, 7), 1
+        )  
         self.assertEqual(
-            get_centered_remainder(17, 10), -3
-        )  # 17 % 10 = 7, which is > 5. So, 7 - 10 = -3
+            get_centered_remainder(6, 7), -1
+        )  # 6 % 7 = 6, which is > 3. So, 6 - 7 = -1
 
     def test_negative_values(self):
-        self.assertEqual(get_centered_remainder(-7, 10), 3)  # Lies in the range (-5, 5]
+        self.assertEqual(get_centered_remainder(-8, 7), -1)
         self.assertEqual(
-            get_centered_remainder(-15, 10), 5
-        )  # -15 % 10 = 5 (in Python, % returns non-negative), which is <= 5
+            get_centered_remainder(-15, 7), -1
+        ) 
         self.assertEqual(
-            get_centered_remainder(-17, 10), 3
-        )  # -17 % 10 = 3, which is <= 5
+            get_centered_remainder(-17, 7), -3
+        )
 
     def test_boundary_values(self):
         q = 7
         self.assertEqual(
-            get_centered_remainder(-q // 2 + 1, q), -q // 2 + 1
-        )  # The smallest positive number in the range
+            get_centered_remainder(- (q - 1) / 2, q), - (q - 1) / 2, q
+        )
         self.assertEqual(
-            get_centered_remainder(q // 2, q), q // 2
-        )  # The largest number in the range
+            get_centered_remainder((q - 1) / 2, q), (q - 1) / 2
+        )
 
     def test_zero(self):
         self.assertEqual(
-            get_centered_remainder(0, 10), 0
-        )  # 0 lies in the range (-5, 5]
+            get_centered_remainder(0, 7), 0
+        )

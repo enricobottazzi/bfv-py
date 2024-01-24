@@ -80,26 +80,32 @@ class TestBFV(unittest.TestCase):
         self.assertIsInstance(public_key[0], Polynomial)
         self.assertIsInstance(public_key[1], Polynomial)
 
-        # Ensure that the coefficients of the public key are within Z_q = (-q/2, q/2)
+        # Ensure that the coefficients of the public key are within the range [-(q-1)/2, (q-1)/2]
+        lower_bound = -(self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
+        upper_bound = (self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
         for coeff in public_key[0].coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rq.modulus // 2
-                and coeff <= self.bfv.rlwe.Rq.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
         for coeff in public_key[1].coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rq.modulus // 2
-                and coeff <= self.bfv.rlwe.Rq.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
 
     def test_message_sample(self):
         message = self.bfv.rlwe.Rt.sample_polynomial()
 
-        # Ensure that the coefficients of the public key are within Z_t = (-t/2, t/2]
+        # Ensure that the coefficients of the public key are within the range = [-(t-1)/2, (t-1)/2]
+
+        lower_bound = -(self.bfv.rlwe.Rt.modulus - 1) / 2 # inclusive
+        upper_bound = (self.bfv.rlwe.Rt.modulus - 1) / 2 # inclusive
+
         for coeff in message.coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rt.modulus // 2
-                and coeff <= self.bfv.rlwe.Rt.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
 
     def test_valid_public_key_encryption(self):
@@ -118,16 +124,19 @@ class TestBFV(unittest.TestCase):
         )
 
         # Ensure that the ciphertext is a polynomial in Rq
-        # Ensure that the coefficients of the ciphertext are within Z_q = (-q/2, q/2)
+        # Ensure that the coefficients of the ciphertext are within the range [-(q-1)/2, (q-1)/2]
+        lower_bound = -(self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
+        upper_bound = (self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
+
         for coeff in ciphertext[0].coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rq.modulus // 2
-                and coeff <= self.bfv.rlwe.Rq.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
         for coeff in ciphertext[1].coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rq.modulus // 2
-                and coeff <= self.bfv.rlwe.Rq.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
         # Ensure that the degree of the ciphertext is at most n-1, which means the has at most n coefficients
         self.assertTrue(len(ciphertext[0].coefficients) <= self.bfv.rlwe.n)
@@ -198,16 +207,19 @@ class TestBFV(unittest.TestCase):
         ciphertext_sum = self.bfv.EvalAdd(ciphertext1, ciphertext2)
 
         # Ensure that the ciphertext_sum is a polynomial in Rq
-        # Ensure that the ciphertext_sum of the ciphertext are within Z_q = (-q/2, q/2)
+        # Ensure that the ciphertext_sum of the ciphertext are within the range [-(q-1)/2, (q-1)/2]
+        lower_bound = -(self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
+        upper_bound = (self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
+
         for coeff in ciphertext_sum[0].coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rq.modulus // 2
-                and coeff <= self.bfv.rlwe.Rq.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
         for coeff in ciphertext_sum[1].coefficients:
             self.assertTrue(
-                coeff > -self.bfv.rlwe.Rq.modulus // 2
-                and coeff <= self.bfv.rlwe.Rq.modulus // 2
+                coeff >= lower_bound
+                and coeff <= upper_bound
             )
         # Ensure that the degree of the ciphertext_sum is at most n-1, which means the has at most n coefficients
         self.assertTrue(len(ciphertext_sum[0].coefficients) <= self.bfv.rlwe.n)
