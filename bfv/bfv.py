@@ -1,5 +1,7 @@
+from bfv.crt import CRTModuli
 from .polynomial import PolynomialRing, Polynomial
 from .discrete_gauss import DiscreteGaussian
+from .utils import mod_inverse
 import numpy as np
 
 
@@ -77,7 +79,7 @@ class RLWE:
 class BFV:
     def __init__(self, rlwe: RLWE):
         """
-        Initialize a BFV instance starting from the parameters
+        Initialize a BFV instance starting from a rlwe instance
 
         Parameters:
         - rlwe: RLWE instance.
@@ -136,16 +138,15 @@ class BFV:
         Encrypt a given message m with a given public_key .
 
         Parameters:
-        - public_key: Public key.
+        - public_key: Public key. The public key must be a tuple of polynomials living in the ring of self.rlwe.Rq.
         - m: message. This must be a polynomial in Rt.
         - error: tuple of error values used in encryption. These must be polynomial sampled from the distribution χ Error.
         - u: ephermeral key polynomial sampled from the distribution χ Ternary.
-        - q: modulus q of the ciphertext space
+        - q: modulus q of the ciphertext space. When using the Chinese Remainder Theorem, this is the modulus of the largest ciphertext space.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
-
         # Polynomials e0, e1 are sampled the distribution χ Error
         e0 = error[0]
         e1 = error[1]
@@ -184,20 +185,20 @@ class BFV:
     def SecretKeyEncrypt(
         self,
         secret_key: Polynomial,
+        a: Polynomial,
         m: Polynomial,
         e: Polynomial,
         q: int,
-        a: Polynomial,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given secret key .
 
         Parameters:
-        - secret_key: Public key.
+        - secret_key: Polynomial sampled from the ternary distribution χ Ternary.
+        - a: polynomial sampled from the ring Rq. When using the Chinese Remainder Theorem, this is the polynomial sampled from the small ciphertext space.
         - m: message. This must be a polynomial in Rt.
         - e: error polynomial sampled from the distribution χ Error.
-        - q: modulus q of the ciphertext space
-        - a: polynomial sampled from the ring Rq.
+        - q: modulus q of the ciphertext space. When using the Chinese Remainder Theorem, this is the modulus of the largest ciphertext space.
 
         Returns:
         ciphertext: Generated ciphertext.
@@ -418,25 +419,14 @@ class BFV:
 
         return (ct0, ct1)
 
+class BFV_CRT:
+    def __init__(self, rlwe_q: RLWE, rlwe_qis: list[RLWE]):
+        """
+        Initialize a BFV instance where the ciphertext space is represented using the Chinese Remainder Theorem (CRT).
 
-def mod_inverse(t, q):
-    """
-    Computes the multiplicative inverse of t modulo q.
-    Returns the inverse, or raises an exception if it doesn't exist.
-    """
-    g, x, _ = extended_gcd(t, q)
-    if g != 1:
-        raise ValueError("The multiplicative inverse does not exist")
-    else:
-        return x % q
-
-def extended_gcd(a, b):
-    """
-    Computes the greatest common divisor of a and b.
-    Returns a tuple (g, x, y) such that a*x + b*y = g = gcd(a, b).
-    """
-    if a == 0:
-        return (b, 0, 1)
-    else:
-        g, y, x = extended_gcd(b % a, a)
-        return (g, x - (b // a) * y, y)
+        Parameters:
+        - rlwe_q: RLWE instance for the ciphertext space q.
+        - rlwe_qis: List of RLWE instances for the ciphertext spaces qi.
+        """
+        self.bfv_q = BFV(rlwe_q)
+        self.bfv_qis = [BFV(rlwe_qi) for rlwe_qi in rlwe_qis]
