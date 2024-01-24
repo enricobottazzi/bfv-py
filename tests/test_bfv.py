@@ -3,7 +3,7 @@ import unittest
 from bfv.crt import CRTModuli, CRTPolynomial
 from bfv.discrete_gauss import DiscreteGaussian
 from bfv.polynomial import PolynomialRing, Polynomial
-from bfv.bfv import BFV_CRT, RLWE, BFV
+from bfv.bfv import RLWE, BFV
 
 
 class TestRLWE(unittest.TestCase):
@@ -159,7 +159,7 @@ class TestBFV(unittest.TestCase):
         e = self.bfv.rlwe.SampleFromErrorDistribution()
         a = self.bfv.rlwe.Rq.sample_polynomial()
 
-        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, a, message, e, self.bfv.rlwe.Rq.modulus)
+        (ciphertext, _, _) = self.bfv.SecretKeyEncrypt(secret_key, a, message, e, self.bfv.rlwe.Rq.modulus)
 
         dec = self.bfv.SecretKeyDecrypt(secret_key, ciphertext, e)
 
@@ -398,7 +398,7 @@ class TestBFVVWithCRT(unittest.TestCase):
 
         for i in range(len(self.crt_moduli.qis)):
             a = self.bfv_rqis[i].rlwe.Rq.sample_polynomial()
-            ciphertext = self.bfv_rqis[i].SecretKeyEncrypt(secret_key, a, message, e, self.crt_moduli.q)
+            (ciphertext, _, _) = self.bfv_rqis[i].SecretKeyEncrypt(secret_key, a, message, e, self.crt_moduli.q)
             c0_rqis.append(ciphertext[0])
             c1_rqis.append(ciphertext[1])
 

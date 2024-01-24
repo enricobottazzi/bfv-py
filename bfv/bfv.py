@@ -202,6 +202,8 @@ class BFV:
 
         Returns:
         ciphertext: Generated ciphertext.
+        k0: multiplicative inverse of t modulo q.
+        k1: scaled message polynomial.
         """
 
         # k^{0} = -t^{-1} namely the multiplicative inverse of t modulo q
@@ -230,7 +232,7 @@ class BFV:
 
         ciphertext = (ct_0, ct_1)
 
-        return ciphertext
+        return (ciphertext, k0, k1)
 
     def PubKeyEncryptConst(
         self,
@@ -418,15 +420,3 @@ class BFV:
         ct1.reduce_in_ring(self.rlwe.Rq)
 
         return (ct0, ct1)
-
-class BFV_CRT:
-    def __init__(self, rlwe_q: RLWE, rlwe_qis: list[RLWE]):
-        """
-        Initialize a BFV instance where the ciphertext space is represented using the Chinese Remainder Theorem (CRT).
-
-        Parameters:
-        - rlwe_q: RLWE instance for the ciphertext space q.
-        - rlwe_qis: List of RLWE instances for the ciphertext spaces qi.
-        """
-        self.bfv_q = BFV(rlwe_q)
-        self.bfv_qis = [BFV(rlwe_qi) for rlwe_qi in rlwe_qis]
