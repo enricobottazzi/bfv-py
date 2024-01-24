@@ -19,3 +19,6 @@ def extended_gcd(a, b):
     else:
         g, y, x = extended_gcd(b % a, a)
         return (g, x - (b // a) * y, y)
+    
+def adjust_negative_coefficients(coefficients, modulus):
+    return [str(modulus + coeff if coeff < 0 else coeff) for coeff in coefficients]

@@ -1,6 +1,6 @@
 import argparse
 import json
-import math
+from bfv.utils import adjust_negative_coefficients
 
 import numpy as np
 from bfv.bfv import BFV, RLWE
@@ -64,14 +64,6 @@ def main(args):
 
     (c0, c1) = ciphertext
 
-    # Add zeroes at the beginning of the e0 polynomial to make it the same degree as the public key
-    e0.coefficients = np.concatenate(
-        (np.zeros(n - len(e0.coefficients)), e0.coefficients)
-    )
-    e1.coefficients = np.concatenate(
-        (np.zeros(n - len(e1.coefficients)), e1.coefficients)
-    )
-
     decrypt_start_time = time.time()
     # Decrypt ciphertext
     dec = bfv.PubKeyDecrypt(secret_key, ciphertext, error, e, u)
@@ -94,18 +86,14 @@ def main(args):
                 "pk1": adjust_negative_coefficients(public_key[1].coefficients, q),
                 "m": adjust_negative_coefficients(message.coefficients.tolist(), q),
                 "u": adjust_negative_coefficients(u.coefficients.tolist(), q),
-                "e0": adjust_negative_coefficients(e0.coefficients.tolist(), q),
-                "e1": adjust_negative_coefficients(e1.coefficients.tolist(), q),
+                "e0": adjust_negative_coefficients(e0.coefficients, q),
+                "e1": adjust_negative_coefficients(e1.coefficients, q),
                 "c0": adjust_negative_coefficients(c0.coefficients, q),
                 "c1": adjust_negative_coefficients(c1.coefficients, q),
                 "cyclo": adjust_negative_coefficients(bfv.rlwe.Rq.denominator, q),
             },
             f,
         )
-
-
-def adjust_negative_coefficients(coefficients, modulus):
-    return [str(modulus + coeff if coeff < 0 else coeff) for coeff in coefficients]
 
 
 if __name__ == "__main__":
