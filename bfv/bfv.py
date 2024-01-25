@@ -199,8 +199,8 @@ class BFV:
         # k^{1} = [QM]t namely the scaled message polynomial
         k1 = Polynomial([q]) * m
 
-        # reduce k^{1} in Rt
-        k1.reduce_in_ring(self.rlwe.Rt)
+        # reduce coefficients of k^{1} by modulus t
+        k1.reduce_coefficients_by_modulus(self.rlwe.Rt.modulus)
 
         # a * s
         mul = a * secret_key

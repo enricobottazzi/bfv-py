@@ -410,9 +410,27 @@ class TestBFVVWithCRT(unittest.TestCase):
 
         for i in range(len(self.crt_moduli.qis)):
             a = self.bfv_rqis[i].rlwe.Rq.sample_polynomial()
-            (ciphertext, _, _) = self.bfv_rqis[i].SecretKeyEncrypt(secret_key, a, message, e, self.crt_moduli.q)
+            (ciphertext, k0, k1) = self.bfv_rqis[i].SecretKeyEncrypt(secret_key, a, message, e, self.crt_moduli.q)
             c0_rqis.append(ciphertext[0])
             c1_rqis.append(ciphertext[1])
+            # Ensure that the coefficients of the k1 are within the range [-(t-1)/2, (t-1)/2]
+            lower_bound = -(self.bfv_rqis[i].rlwe.Rt.modulus - 1) / 2
+            upper_bound = (self.bfv_rqis[i].rlwe.Rt.modulus - 1) / 2
+            for coeff in k1.coefficients:
+                self.assertTrue(coeff >= lower_bound and coeff <= upper_bound)
+            # Ensure that k0 is within the range [- (q-1), 0]
+            lower_bound = -(self.bfv_rqis[i].rlwe.Rq.modulus - 1)
+            upper_bound = 0
+            self.assertTrue(k0 >= lower_bound and k0 <= upper_bound)
+            # Multiply k1 by k0
+            k = k1 * Polynomial([k0])
+            # Ensure that the coefficients of k are within the range [-(q-1)/2 * abs(k0), (q-1)/2 * abs(k0)]
+            lower_bound = -(self.bfv_rqis[i].rlwe.Rq.modulus - 1) / 2 * abs(k0)
+            upper_bound = (self.bfv_rqis[i].rlwe.Rq.modulus - 1) / 2 * abs(k0)
+            for coeff in k.coefficients:
+                self.assertTrue(coeff >= lower_bound and coeff <= upper_bound)
+            
+    
 
         # Recover ciphertext in Rq
         c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
