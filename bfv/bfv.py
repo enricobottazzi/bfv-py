@@ -189,8 +189,8 @@ class BFV:
 
         Returns:
         ciphertext: Generated ciphertext.
-        k0: multiplicative inverse of t modulo q.
-        k1: scaled message polynomial.
+        k0: multiplicative inverse of t modulo q. When using the Chinese Remainder Theorem, this is the multiplicative inverse of t modulo the smallest ciphertext space.
+        k1: scaled message polynomial. This is equal to [QM]t. When using the Chinese Remainder Theorem, the Q is the modulus of the
         """
 
         # k^{0} = -t^{-1} namely the multiplicative inverse of t modulo q
