@@ -1,7 +1,7 @@
 from .polynomial import PolynomialRing, Polynomial
 from .discrete_gauss import DiscreteGaussian
-from .utils import mod_inverse
 import numpy as np
+import math
 
 
 class RLWE:
@@ -83,19 +83,22 @@ class BFV:
         return self.rlwe.SampleFromTernaryDistribution()
 
     def PublicKeyGen(
-        self, s: Polynomial, e: Polynomial
+        self, s: Polynomial
     ) -> tuple[Polynomial, Polynomial]:
         """
         Generate a public key from a given secret key.
 
         Parameters:
         - s: Secret key.
-        - e: error polynomial sampled from the distribution χ Error.
 
         Returns: Generated public key.
-        """
+        """        
         # Sample a polynomial a from Rq
         a = self.rlwe.Rq.sample_polynomial()
+
+        # Sample a polynomial e from the distribution χ Error
+        e = self.rlwe.SampleFromErrorDistribution()
+
         # a * s
         mul = a * s
 
@@ -117,9 +120,6 @@ class BFV:
         self,
         public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
-        error: tuple[Polynomial, Polynomial],
-        u: Polynomial,
-        q: int,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given public_key .
@@ -127,25 +127,23 @@ class BFV:
         Parameters:
         - public_key: Public key. The public key must be a tuple of polynomials living in the ring of self.rlwe.Rq.
         - m: message. This must be a polynomial in Rt.
-        - error: tuple of error values used in encryption. These must be polynomial sampled from the distribution χ Error.
-        - u: ephermeral key polynomial sampled from the distribution χ Ternary.
-        - q: modulus q of the ciphertext space. When using the Chinese Remainder Theorem, this is the modulus of the largest ciphertext space.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
         # Polynomials e0, e1 are sampled the distribution χ Error
-        e0 = error[0]
-        e1 = error[1]
+        e0 = self.rlwe.SampleFromErrorDistribution()
+        e1 = self.rlwe.SampleFromErrorDistribution()
 
-        # Compute the ciphertext.
-        # Q[m]
-        q_m = Polynomial([q]) * m
+        # Polynomials u is sampled from the distribution χ Ternary
+        u = self.rlwe.SampleFromTernaryDistribution()
 
-        # Q[m]/t rounded to the nearest integer
-        scaled_message = Polynomial(
-            [round(coeff / self.rlwe.Rt.modulus) for coeff in q_m.coefficients]
-        )
+        # Scale the plaintext message up by delta
+        # obtain delta by rounding down q/t to the nearest integer
+        delta = math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus)
+
+        # scaled_message = delta * m
+        scaled_message = Polynomial([delta]) * m
 
         # pk0 * u
         pk0_u = public_key[0] * u
@@ -172,10 +170,7 @@ class BFV:
     def SecretKeyEncrypt(
         self,
         secret_key: Polynomial,
-        a: Polynomial,
         m: Polynomial,
-        e: Polynomial,
-        q: int,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given secret key .
@@ -184,23 +179,18 @@ class BFV:
         - secret_key: Polynomial sampled from the ternary distribution χ Ternary.
         - a: polynomial sampled from the ring Rq. When using the Chinese Remainder Theorem, this is the polynomial sampled from the small ciphertext space.
         - m: message. This must be a polynomial in Rt.
-        - e: error polynomial sampled from the distribution χ Error.
-        - q: modulus q of the ciphertext space. When using the Chinese Remainder Theorem, this is the modulus of the largest ciphertext space.
 
         Returns:
         ciphertext: Generated ciphertext.
-        k0: multiplicative inverse of t modulo q. When using the Chinese Remainder Theorem, this is the multiplicative inverse of t modulo the smallest ciphertext space.
-        k1: scaled message polynomial. This is equal to [QM]t. When using the Chinese Remainder Theorem, the Q is the modulus of the
         """
 
-        # k^{0} = -t^{-1} namely the multiplicative inverse of t modulo q
-        k0 = mod_inverse(self.rlwe.Rt.modulus, self.rlwe.Rq.modulus) * (-1)
+        a = self.rlwe.Rq.sample_polynomial()
+        e = self.rlwe.SampleFromErrorDistribution()
 
-        # k^{1} = [QM]t namely the scaled message polynomial
-        k1 = Polynomial([q]) * m
+        delta = math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus)
 
-        # reduce coefficients of k^{1} by modulus t
-        k1.reduce_coefficients_by_modulus(self.rlwe.Rt.modulus)
+        # scaled_message = delta * m
+        scaled_message = Polynomial([delta]) * m
 
         # a * s
         mul = a * secret_key
@@ -208,8 +198,8 @@ class BFV:
         # b = a*s + e.
         b = mul + e
 
-        # ct_0 = b + k^{0}k^{1}
-        ct_0 = b + (Polynomial([k0]) * k1)
+        # ct_0 = a*s + e + delta * m
+        ct_0 = b + scaled_message
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -219,14 +209,12 @@ class BFV:
 
         ciphertext = (ct_0, ct_1)
 
-        return (ciphertext, k0, k1)
+        return (ciphertext)
 
     def PubKeyEncryptConst(
         self,
         public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
-        u: Polynomial,
-        delta: int,
     ):
         """
         Encrypt a given message m with a given public_key setting e0 and e1 to 0. This is used for the constant multiplication and addition.
@@ -234,30 +222,36 @@ class BFV:
         Parameters:
         - public_key: Public key.
         - m: message.
-        - u: ephermeral key polynomial sampled from the distribution χ Ternary.
-        - delta: delta = q/t
 
         Returns:
         ciphertext: Generated ciphertext.
         """
+        # Polynomials u is sampled from the distribution χ Ternary
+        u = self.rlwe.SampleFromTernaryDistribution()
 
-        # Compute the ciphertext.
-        # delta * m
-        delta_m = Polynomial([delta]) * m
+        # Scale the plaintext message up by delta
+        # obtain delta by rounding down q/t to the nearest integer
+        delta = math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus)
+
+        # scaled_message = delta * m
+        scaled_message = Polynomial([delta]) * m
 
         # pk0 * u
         pk0_u = public_key[0] * u
 
-        # ct_0 = delta * m + pk0 * u
-        ct_0 = delta_m + pk0_u
+        # scaled_message + pk0 * u 
+        ct_0 = scaled_message + pk0_u 
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
 
-        # ct_1 = pk1 * u
-        ct_1 = public_key[1] * u
+        # pk1 * u
+        pk1_u = public_key[1] * u
 
-        # ct_1 will be in Rq
+        # pk1 * u 
+        ct_1 = pk1_u 
+
+        # The result will be in Rq
         ct_1.reduce_in_ring(self.rlwe.Rq)
 
         ciphertext = (ct_0, ct_1)
@@ -268,9 +262,6 @@ class BFV:
         self,
         secret_key: Polynomial,
         ciphertext: tuple[Polynomial, Polynomial],
-        error: tuple[Polynomial, Polynomial],
-        e: Polynomial,
-        u: Polynomial,
     ):
         """
         Decrypt a given ciphertext (encrypted using public key encryption) with a given secret key.
@@ -278,46 +269,26 @@ class BFV:
         Parameters:
         - secret_key: Secret key.
         - ciphertext: Ciphertext.
-        - error: tuple of error values used in encryption. This is used when calculating that the noise is small enough to decrypt the message.
-        - e: error polynomial sampled from the distribution χ Error. Used for public key generation. This is used when calculating that the noise is small enough to decrypt the message.
-        - u: ephermeral key polynomial sampled from the distribution χ Ternary. Used for encryption. This is used when calculating that the noise is small enough to decrypt the message.
 
         Returns: Decrypted message.
         """
-        # dec = round(t/q * ((ct0 + ct1*s))
+
         ct0 = ciphertext[0]
         ct1 = ciphertext[1]
         s = secret_key
         t = self.rlwe.Rt.modulus
         q = self.rlwe.Rq.modulus
 
-        # Ensure that all the errors v < q/(2t) - 1/2 (check section 3.1 of 2021/204)
-        # v = u * e + e0 + s * e1
-        u_e = u * e
-        s_e1 = s * error[1]
-
-        v = u_e + error[0]
-        v = v + s_e1
-
-        threshold = q / (2 * t) - 1 / 2
-
-        for coeff in v.coefficients:
-            assert abs(coeff) < (
-                threshold
-            ), f"Noise {abs(coeff)} exceeds the threshold value {threshold}, decryption won't work"
-
         ct1_s = ct1 * s
 
         # ct0 + ct1*s
-        numerator_1 = ct0 + ct1_s
+        numerator = ct0 + ct1_s
 
-        # Reduce numerator_1 in Rq
-        numerator_1.reduce_in_ring(self.rlwe.Rq)
+        # delta = q/t
+        delta = math.floor(q / t)
 
-        numerator = Polynomial([t]) * numerator_1
-
-        # For each coefficient of the numerator, divide it by q and round it to the nearest integer
-        quotient = [round(coeff / q) for coeff in numerator.coefficients]
+        # scale the message down by delta and remove the noise performing the rounding by the nearest integer
+        quotient = [round(coeff / delta) for coeff in numerator.coefficients]
 
         # trim leading zeros
         quotient = np.trim_zeros(quotient, "f")
@@ -333,7 +304,6 @@ class BFV:
         self,
         secret_key: Polynomial,
         ciphertext: tuple[Polynomial, Polynomial],
-        e: Polynomial,
     ):
         """
         Decrypt a given ciphertext (encrypted using secret key encryption) with a given secret key.
@@ -341,37 +311,25 @@ class BFV:
         Parameters:
         - secret_key: Secret key.
         - ciphertext: Ciphertext.
-        - e: error polynomial sampled from the distribution χ Error. Used for encryption. This is used when calculating that the noise is small enough to decrypt the message.
 
         Returns: Decrypted message.
         """
-        # dec = round(t/q * ((ct0 + ct1*s))
         ct0 = ciphertext[0]
         ct1 = ciphertext[1]
         s = secret_key
         t = self.rlwe.Rt.modulus
         q = self.rlwe.Rq.modulus
 
-        # Ensure that `e` < Q/(2t)
-        threshold = q / (2 * t)
-
-        for coeff in e.coefficients:
-            assert abs(coeff) < (
-                threshold
-            ), f"Noise {abs(coeff)} exceeds the threshold value {threshold}, decryption won't work"
-
         ct1_s = ct1 * s
 
         # ct0 + ct1*s
-        numerator_1 = ct0 + ct1_s
+        numerator = ct0 + ct1_s
 
-        # Reduce numerator_1 in Rq
-        numerator_1.reduce_in_ring(self.rlwe.Rq)
+        # delta = q/t
+        delta = math.floor(q / t)
 
-        numerator = Polynomial([t]) * numerator_1
-
-        # For each coefficient of the numerator, divide it by q and round it to the nearest integer
-        quotient = [round(coeff / q) for coeff in numerator.coefficients]
+        # scale the message down by delta and remove the noise performing the rounding by the nearest integer
+        quotient = [round(coeff / delta) for coeff in numerator.coefficients]
 
         # trim leading zeros
         quotient = np.trim_zeros(quotient, "f")
