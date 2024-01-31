@@ -284,6 +284,9 @@ class BFV:
         # ct0 + ct1*s
         numerator = ct0 + ct1_s
 
+        # reduce the numerator in Rq
+        numerator.reduce_in_ring(self.rlwe.Rq)
+
         # delta = q/t
         delta = math.floor(q / t)
 
@@ -294,9 +297,6 @@ class BFV:
         quotient = np.trim_zeros(quotient, "f")
 
         quotient_poly = Polynomial(quotient)
-
-        # Reduce the quotient in Rt
-        quotient_poly.reduce_in_ring(self.rlwe.Rt)
 
         return quotient_poly
 
@@ -325,6 +325,9 @@ class BFV:
         # ct0 + ct1*s
         numerator = ct0 + ct1_s
 
+        # reduce the numerator in Rq
+        numerator.reduce_in_ring(self.rlwe.Rq)
+
         # delta = q/t
         delta = math.floor(q / t)
 
@@ -335,9 +338,6 @@ class BFV:
         quotient = np.trim_zeros(quotient, "f")
 
         quotient_poly = Polynomial(quotient)
-
-        # Reduce the quotient in Rt
-        quotient_poly.reduce_in_ring(self.rlwe.Rt)
 
         return quotient_poly
 
