@@ -287,11 +287,13 @@ class BFV:
         # reduce the numerator in Rq
         numerator.reduce_in_ring(self.rlwe.Rq)
 
-        # delta = q/t
-        delta = math.floor(q / t)
+        # scale the num down by t/q 
+        num = [coeff * t for coeff in numerator.coefficients]
 
-        # scale the message down by delta and remove the noise performing the rounding by the nearest integer
-        quotient = [round(coeff / delta) for coeff in numerator.coefficients]
+        quotient = [coeff / q for coeff in num]
+
+        # round the coefficients of quotient to the nearest integer
+        quotient = [round(coeff) for coeff in quotient]
 
         # trim leading zeros
         quotient = np.trim_zeros(quotient, "f")
@@ -328,11 +330,13 @@ class BFV:
         # reduce the numerator in Rq
         numerator.reduce_in_ring(self.rlwe.Rq)
 
-        # delta = q/t
-        delta = math.floor(q / t)
+        # scale the num down by t/q 
+        num = [coeff * t for coeff in numerator.coefficients]
 
-        # scale the message down by delta and remove the noise performing the rounding by the nearest integer
-        quotient = [round(coeff / delta) for coeff in numerator.coefficients]
+        quotient = [coeff / q for coeff in num]
+
+        # round the coefficients of quotient to the nearest integer
+        quotient = [round(coeff) for coeff in quotient]
 
         # trim leading zeros
         quotient = np.trim_zeros(quotient, "f")
