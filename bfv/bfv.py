@@ -1,5 +1,6 @@
 from .polynomial import PolynomialRing, Polynomial
 from .discrete_gauss import DiscreteGaussian
+from .crt import CRTModuli
 import numpy as np
 import math
 
@@ -369,3 +370,96 @@ class BFV:
         ct1.reduce_in_ring(self.rlwe.Rq)
 
         return (ct0, ct1)
+    
+class BFVCrt:
+    def __init__(self, crt_moduli: CRTModuli, n: int, t: int, discrete_gauss: DiscreteGaussian):
+        self.crt_moduli = crt_moduli
+        self.bfv_q = BFV(RLWE(n, crt_moduli.q, t, discrete_gauss))
+        self.bfv_qis = []
+        for qi in crt_moduli.qis:
+            self.bfv_qis.append(BFV(RLWE(n, qi, t, discrete_gauss)))
+            
+    def SecretKeyGen(self) -> Polynomial:
+        """
+        Randomly generate a secret key.
+
+        Returns: Generated secret key polynomial.
+        """
+
+        return self.bfv_q.SecretKeyGen()
+
+
+    def PublicKeyGen(
+        self, s: Polynomial
+    ) -> [tuple[Polynomial, Polynomial]]:
+        """
+        Generate a set of public keys for each crt basis from a given secret key.
+
+        Parameters:
+        - s: Secret key.
+
+        Returns: Generated public keys
+        """
+
+        public_keys = []
+
+        # for each rlwe instance in rlwe_qis
+        for bfv_qi in self.bfv_qis:
+            pub_key = bfv_qi.PublicKeyGen(s)
+            public_keys.append(pub_key)
+        
+        return public_keys
+    
+    def PubKeyEncrypt(
+        self,
+        public_keys: [tuple[Polynomial, Polynomial]],
+        m: Polynomial,
+    ) -> list[tuple[Polynomial, Polynomial]]:
+        """
+        Encrypt a given message m with a given list of public_keys.
+
+        Parameters:
+        - public_keys: Public keys. The public key must be a list of tuple of polynomials living in the ring of self.rlwe.Rqi.
+        - m: message. This must be a polynomial in Rt.
+
+        Returns:
+        ciphertext: Generated ciphertext.
+        """
+        ciphertexts = []
+        # Polynomials e0, e1 are sampled the distribution χ Error
+        e0 = self.bfv_q.rlwe.SampleFromErrorDistribution()
+        e1 = self.bfv_q.rlwe.SampleFromErrorDistribution()
+        u = self.bfv_q.rlwe.SampleFromTernaryDistribution()
+
+        for i, public_key_qi in enumerate(public_keys):
+
+            # Scale the plaintext message up by delta
+            # obtain delta by rounding down q/t to the nearest integer
+            delta = self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus
+
+            # scaled_message = delta * m
+            scaled_message = Polynomial([delta]) * m
+
+            # pk0 * u
+            pk0_u = public_key_qi[0] * u
+
+            # scaled_message + pk0 * u + e0
+            ct_0 = scaled_message + pk0_u + e0
+
+            # ct_0 will be in Rqi
+            ct_0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
+
+            # pk1 * u
+            pk1_u = public_key_qi[1] * u
+
+            # pk1 * u + e1
+            ct_1 = pk1_u + e1
+
+            # The result will be in Rqi
+            ct_1.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
+
+            ciphertext = (ct_0, ct_1)
+
+            ciphertexts.append(ciphertext)
+
+        return ciphertexts

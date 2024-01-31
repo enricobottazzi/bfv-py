@@ -1,6 +1,7 @@
 import math
 from typing import List
 from .polynomial import Polynomial, PolynomialRing, get_centered_remainder
+from .utils import mod_inverse_centered
 
 
 class CRTModuli:
@@ -77,10 +78,11 @@ class CRTInteger:
         x = 0
         for i in range(len(self.crt_moduli.qis)):
             xi = self.xis[i]
-            qi_star = self.crt_moduli.q // self.crt_moduli.qis[i]
-            qi_tilde = pow(
-                qi_star, -1, self.crt_moduli.qis[i]
-            )  # inverse of qi_star mod self.crt_moduli.qis[i]
+            qi_star = 1
+            for j in range(len(self.crt_moduli.qis)):
+                if j != i:
+                    qi_star *= self.crt_moduli.qis[j]
+            qi_tilde = mod_inverse_centered(qi_star, self.crt_moduli.qis[i])  # inverse of qi_star mod self.crt_moduli.qis[i]
             x += xi * qi_star * qi_tilde
 
         return get_centered_remainder(x, self.crt_moduli.q)
