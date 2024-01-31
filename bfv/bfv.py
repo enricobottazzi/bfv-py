@@ -141,7 +141,7 @@ class BFV:
 
         # Scale the plaintext message up by delta
         # obtain delta by rounding down q/t to the nearest integer
-        delta = math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus)
+        delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
 
         # scaled_message = delta * m
         scaled_message = Polynomial([delta]) * m
@@ -188,7 +188,7 @@ class BFV:
         a = self.rlwe.Rq.sample_polynomial()
         e = self.rlwe.SampleFromErrorDistribution()
 
-        delta = math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus)
+        delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
 
         # scaled_message = delta * m
         scaled_message = Polynomial([delta]) * m
@@ -232,7 +232,7 @@ class BFV:
 
         # Scale the plaintext message up by delta
         # obtain delta by rounding down q/t to the nearest integer
-        delta = math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus)
+        delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
 
         # scaled_message = delta * m
         scaled_message = Polynomial([delta]) * m
@@ -300,6 +300,9 @@ class BFV:
         quotient = np.trim_zeros(quotient, "f")
 
         quotient_poly = Polynomial(quotient)
+
+        # reduce the quotient in Rt
+        quotient_poly.reduce_in_ring(self.rlwe.Rt)
 
         return quotient_poly
 
@@ -402,11 +405,29 @@ class BFVCrt:
         """
 
         public_keys = []
+        # Sample a polynomial e from the distribution χ Error
+        e = self.bfv_q.rlwe.SampleFromErrorDistribution()
 
-        # for each rlwe instance in rlwe_qis
-        for bfv_qi in self.bfv_qis:
-            pub_key = bfv_qi.PublicKeyGen(s)
-            public_keys.append(pub_key)
+        for i in range(len(self.crt_moduli.qis)):
+            # Sample a polynomial a from Rqi
+            a = self.bfv_qis[i].rlwe.Rq.sample_polynomial()
+
+            # a * s
+            mul = a * s
+
+            # b = a*s + e.
+            b = mul + e
+
+            # pk0 is a polynomial in Rqi
+            pk0 = b
+            pk0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
+
+            # pk1 = -a.
+            pk1 = a * Polynomial([-1])
+
+            public_key = (pk0, pk1)
+
+            public_keys.append(public_key)
         
         return public_keys
     
@@ -430,15 +451,12 @@ class BFVCrt:
         e0 = self.bfv_q.rlwe.SampleFromErrorDistribution()
         e1 = self.bfv_q.rlwe.SampleFromErrorDistribution()
         u = self.bfv_q.rlwe.SampleFromTernaryDistribution()
+        self.delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
 
         for i, public_key_qi in enumerate(public_keys):
 
-            # Scale the plaintext message up by delta
-            # obtain delta by rounding down q/t to the nearest integer
-            delta = self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus
-
             # scaled_message = delta * m
-            scaled_message = Polynomial([delta]) * m
+            scaled_message = Polynomial([self.delta]) * m
 
             # pk0 * u
             pk0_u = public_key_qi[0] * u
