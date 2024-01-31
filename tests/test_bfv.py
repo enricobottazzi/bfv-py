@@ -298,3 +298,10 @@ class TestBFVVWithCRT(unittest.TestCase):
         # Assert that the two decryptions are the same
         self.assertEqual(dec.coefficients, message.coefficients)
 
+    def test_valid_public_key_decryption(self):
+        s = self.bfv_crt.SecretKeyGen()
+        pub_keys = self.bfv_crt.PublicKeyGen(s)
+        message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
+        ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message)
+
+        message_prime = self.bfv_crt.PubKeyDecrypt(s, ciphertexts)

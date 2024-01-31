@@ -1,6 +1,7 @@
-from .polynomial import PolynomialRing, Polynomial
+from .polynomial import PolynomialRing, Polynomial, get_centered_remainder
 from .discrete_gauss import DiscreteGaussian
 from .crt import CRTModuli
+from .utils import mod_inverse_centered
 import numpy as np
 import math
 
@@ -481,3 +482,61 @@ class BFVCrt:
             ciphertexts.append(ciphertext)
 
         return ciphertexts
+    
+    def PubKeyDecrypt(
+        self,
+        s: Polynomial,
+        ciphertexts: list[tuple[Polynomial, Polynomial]],
+    ) -> Polynomial:
+        """
+        Decrypts a set of ciphertexts in their CRT representation given a secret key.
+
+        Parameters:
+        - ciphertexts: Ciphertexts expressed in their CRT representation.
+        - s: Secret key.
+
+        Returns: Decrypted message.
+        """
+
+        matrix = []
+
+        for i in range(len(self.crt_moduli.qis)):
+            inner_product = ciphertexts[i][0] + ciphertexts[i][1] * s
+            inner_product.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
+            matrix.append(inner_product.coefficients)
+
+        # assert that the matrix has k rows and n columns
+        assert len(matrix) == len(self.crt_moduli.qis)
+
+        # assert that the matrix has n columns
+        assert all(len(row) == len(matrix[0]) for row in matrix)
+        assert len(matrix[0]) == self.bfv_q.rlwe.n
+
+        # recover each coefficient of m from the matrix
+        message = []
+        for i in range(self.bfv_q.rlwe.n):
+            message_coeff = 0
+            for j in range(len(self.crt_moduli.qis)):
+                x_i = matrix[j][i]
+                qi_star = 1
+                for k in range(len(self.crt_moduli.qis)):
+                    if k != j:
+                        qi_star *= self.crt_moduli.qis[k]
+                qi_tilde = mod_inverse_centered(qi_star, self.crt_moduli.qis[j])  # inverse of qi_star mod self.crt_moduli.qis[i]
+                scaling_factor = qi_tilde * self.bfv_q.rlwe.Rt.modulus
+                scaling_factor = scaling_factor / self.crt_moduli.qis[j]
+                message_coeff += x_i * scaling_factor
+
+            # round the coefficient to the nearest integer
+            message_coeff = round(message_coeff)
+
+            # message coefficient is in Rt
+            message_coeff = get_centered_remainder(message_coeff, self.bfv_q.rlwe.Rt.modulus)
+
+            message.append(message_coeff)
+
+        return Polynomial(message)
+
+        
+
+
