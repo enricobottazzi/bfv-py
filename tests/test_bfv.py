@@ -1,4 +1,3 @@
-import math
 import unittest
 from bfv.discrete_gauss import DiscreteGaussian
 from bfv.polynomial import PolynomialRing, Polynomial
@@ -12,7 +11,6 @@ class TestRLWE(unittest.TestCase):
         self.sigma = 3.2
         self.discrete_gaussian = DiscreteGaussian(self.sigma)
         self.t = 65537
-        self.delta = int(math.floor(self.q / self.t))
         self.rlwe = RLWE(self.n, self.q, self.t, self.discrete_gaussian)
 
     def test_rlwe_initialization(self):
@@ -56,7 +54,6 @@ class TestBFV(unittest.TestCase):
         sigma = 3.2
         discrete_gaussian = DiscreteGaussian(sigma)
         t = 65537
-        self.delta = int(math.floor(q / t))
         rlwe = RLWE(n, q, t, discrete_gaussian)
         self.bfv = BFV(rlwe)
 
@@ -71,7 +68,6 @@ class TestBFV(unittest.TestCase):
 
     def test_public_key_gen(self):
         secret_key = self.bfv.SecretKeyGen()
-        e = self.bfv.rlwe.SampleFromErrorDistribution()
         public_key = self.bfv.PublicKeyGen(secret_key)
 
         self.assertIsInstance(public_key, tuple)
@@ -305,3 +301,5 @@ class TestBFVVWithCRT(unittest.TestCase):
         ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message)
 
         message_prime = self.bfv_crt.PubKeyDecrypt(s, ciphertexts)
+
+        assert message_prime == message

@@ -4,6 +4,7 @@ from .crt import CRTModuli
 from .utils import mod_inverse_centered
 import numpy as np
 import math
+from decimal import Decimal
 
 
 class RLWE:
@@ -512,7 +513,7 @@ class BFVCrt:
         assert all(len(row) == len(matrix[0]) for row in matrix)
         assert len(matrix[0]) == self.bfv_q.rlwe.n
 
-        # recover each coefficient of m from the matrix
+        # recover each coefficient of m from the matrix. Procedure based on paragraph 2.3 of https://eprint.iacr.org/2018/117
         message = []
         for i in range(self.bfv_q.rlwe.n):
             message_coeff = 0
@@ -524,7 +525,7 @@ class BFVCrt:
                         qi_star *= self.crt_moduli.qis[k]
                 qi_tilde = mod_inverse_centered(qi_star, self.crt_moduli.qis[j])  # inverse of qi_star mod self.crt_moduli.qis[i]
                 scaling_factor = qi_tilde * self.bfv_q.rlwe.Rt.modulus
-                scaling_factor = scaling_factor / self.crt_moduli.qis[j]
+                scaling_factor = Decimal(scaling_factor) / Decimal(self.crt_moduli.qis[j])
                 message_coeff += x_i * scaling_factor
 
             # round the coefficient to the nearest integer
