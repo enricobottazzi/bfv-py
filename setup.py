@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="bfv",
-    version="0.1.9.4",
+    version="0.1.9.5",
     packages=find_packages(),
     install_requires=[
         "numpy",
