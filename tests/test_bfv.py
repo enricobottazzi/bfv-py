@@ -2,7 +2,7 @@ import unittest
 from bfv.discrete_gauss import DiscreteGaussian
 from bfv.polynomial import PolynomialRing, Polynomial
 from bfv.bfv import RLWE, BFV, BFVCrt
-from bfv.crt import CRTModuli, CRTPolynomial
+from bfv.crt import CRTModuli
 
 class TestRLWE(unittest.TestCase):
     def setUp(self):

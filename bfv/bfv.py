@@ -137,18 +137,16 @@ class BFV:
         Returns:
         ciphertext: Generated ciphertext.
         """
-        # Scale the plaintext message up by delta
-        # obtain delta by rounding down q/t to the nearest integer
-        delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
-
-        # scaled_message = delta * m
-        scaled_message = Polynomial([delta]) * m
+        
+        # scale the message as round(Q*m/t)
+        factor = Decimal(self.rlwe.Rq.modulus) / Decimal(self.rlwe.Rt.modulus)
+        scaled_message = [round(coeff * factor) for coeff in m.coefficients]
 
         # pk0 * u
         pk0_u = public_key[0] * u
 
         # scaled_message + pk0 * u + e0
-        ct_0 = scaled_message + pk0_u + e0
+        ct_0 = Polynomial(scaled_message) + pk0_u + e0
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -186,10 +184,9 @@ class BFV:
         a = self.rlwe.Rq.sample_polynomial()
         e = self.rlwe.SampleFromErrorDistribution()
 
-        delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
-
-        # scaled_message = delta * m
-        scaled_message = Polynomial([delta]) * m
+        # scale the message as round(Q*m/t)
+        factor = Decimal(self.rlwe.Rq.modulus) / Decimal(self.rlwe.Rt.modulus)
+        scaled_message = [round(coeff * factor) for coeff in m.coefficients]
 
         # a * s
         mul = a * secret_key
@@ -197,8 +194,8 @@ class BFV:
         # b = a*s + e.
         b = mul + e
 
-        # ct_0 = a*s + e + delta * m
-        ct_0 = b + scaled_message
+        # ct_0 = a*s + e + scaled_message
+        ct_0 = b + Polynomial(scaled_message)
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -228,18 +225,15 @@ class BFV:
         ciphertext: Generated ciphertext.
         """
 
-        # Scale the plaintext message up by delta
-        # obtain delta by rounding down q/t to the nearest integer
-        delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
-
-        # scaled_message = delta * m
-        scaled_message = Polynomial([delta]) * m
+        # scale the message as round(Q*m/t)
+        factor = Decimal(self.rlwe.Rq.modulus) / Decimal(self.rlwe.Rt.modulus)
+        scaled_message = [round(coeff * factor) for coeff in m.coefficients]
 
         # pk0 * u
         pk0_u = public_key[0] * u
 
         # scaled_message + pk0 * u 
-        ct_0 = scaled_message + pk0_u 
+        ct_0 = Polynomial(scaled_message) + pk0_u 
 
         # ct_0 will be in Rq
         ct_0.reduce_in_ring(self.rlwe.Rq)
@@ -421,18 +415,18 @@ class BFVCrt:
         ciphertexts: Generated ciphertext in their CRT representation.
         """
         ciphertexts = []
-        delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
+        scaling_factor = Decimal(self.bfv_q.rlwe.Rq.modulus) / Decimal(self.bfv_q.rlwe.Rt.modulus)
 
         for i, public_key_qi in enumerate(public_keys):
 
-            # scaled_message = delta * m
-            scaled_message = Polynomial([delta]) * m
+            # scale the message as round(Q*m/t)
+            scaled_message = [round(coeff * scaling_factor) for coeff in m.coefficients]
 
             # pk0 * u
             pk0_u = public_key_qi[0] * u
 
             # scaled_message + pk0 * u + e0
-            ct_0 = scaled_message + pk0_u + e0
+            ct_0 = Polynomial(scaled_message) + pk0_u + e0
 
             # ct_0 will be in Rqi
             ct_0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
@@ -473,11 +467,11 @@ class BFVCrt:
         """
 
         ciphertexts = []
-        delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
+        scaling_factor = Decimal(self.bfv_q.rlwe.Rq.modulus) / Decimal(self.bfv_q.rlwe.Rt.modulus)
 
         for i, a in enumerate(ais):
-            # scaled_message = delta * m
-            scaled_message = Polynomial([delta]) * m
+            # scale the message as round(Q*m/t)
+            scaled_message = [round(coeff * scaling_factor) for coeff in m.coefficients]
 
             # a * s
             mul = a * s
@@ -485,8 +479,8 @@ class BFVCrt:
             # b = a*s + e.
             b = mul + e
 
-            # ct_0 = a*s + e + delta * m
-            ct_0 = b + scaled_message
+            # ct_0 = a*s + e + scaled_message
+            ct_0 = b + Polynomial(scaled_message)
 
             # ct_0 will be in Rqi
             ct_0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
