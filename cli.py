@@ -23,6 +23,7 @@ def main(args):
 
     u = rlwe.SampleFromTernaryDistribution()
     e = rlwe.SampleFromErrorDistribution()
+    a = rlwe.Rq.sample_polynomial()
 
     bfv = BFV(rlwe)
 
@@ -31,7 +32,7 @@ def main(args):
 
     pk_gen_start_time = time.time()
 
-    public_key = bfv.PublicKeyGen(secret_key, e)
+    public_key = bfv.PublicKeyGen(secret_key, e, a)
 
     pk_gen_end_time = time.time()
     pk_gen_elapsed_time = pk_gen_end_time - pk_gen_start_time
@@ -53,10 +54,9 @@ def main(args):
 
     e0 = bfv.rlwe.SampleFromErrorDistribution()
     e1 = bfv.rlwe.SampleFromErrorDistribution()
-    error = (e0, e1)
 
     # Encrypt message
-    ciphertext = bfv.PubKeyEncrypt(public_key, message, error, u, q)
+    ciphertext = bfv.PubKeyEncrypt(public_key, message, e0, e1, u)
 
     encrypt_end_time = time.time()
     encrypt_elapsed_time = encrypt_end_time - encrypt_start_time
@@ -67,7 +67,7 @@ def main(args):
 
     decrypt_start_time = time.time()
     # Decrypt ciphertext
-    dec = bfv.PubKeyDecrypt(secret_key, ciphertext, error, e, u)
+    dec = bfv.PubKeyDecrypt(secret_key, ciphertext)
 
     decrypt_end_time = time.time()
     decrypt_elapsed_time = decrypt_end_time - decrypt_start_time

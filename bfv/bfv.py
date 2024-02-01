@@ -86,21 +86,18 @@ class BFV:
         return self.rlwe.SampleFromTernaryDistribution()
 
     def PublicKeyGen(
-        self, s: Polynomial
+        self, s: Polynomial, e: Polynomial, a: Polynomial
     ) -> tuple[Polynomial, Polynomial]:
         """
         Generate a public key from a given secret key.
 
         Parameters:
         - s: Secret key.
+        - e: polynomial sampled from the distribution χ Error.
+        - a: polynomial sampled from the ring Rq.
 
         Returns: Generated public key.
         """        
-        # Sample a polynomial a from Rq
-        a = self.rlwe.Rq.sample_polynomial()
-
-        # Sample a polynomial e from the distribution χ Error
-        e = self.rlwe.SampleFromErrorDistribution()
 
         # a * s
         mul = a * s
@@ -123,6 +120,9 @@ class BFV:
         self,
         public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
+        e0: Polynomial,
+        e1: Polynomial,
+        u: Polynomial,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given public_key .
@@ -130,17 +130,13 @@ class BFV:
         Parameters:
         - public_key: Public key. The public key must be a tuple of polynomials living in the ring of self.rlwe.Rq.
         - m: message. This must be a polynomial in Rt.
+        - e0: polynomial sampled from the distribution χ Error.
+        - e1: polynomial sampled from the distribution χ Error.
+        - u: polynomial sampled from the distribution χ Ternary.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
-        # Polynomials e0, e1 are sampled the distribution χ Error
-        e0 = self.rlwe.SampleFromErrorDistribution()
-        e1 = self.rlwe.SampleFromErrorDistribution()
-
-        # Polynomials u is sampled from the distribution χ Ternary
-        u = self.rlwe.SampleFromTernaryDistribution()
-
         # Scale the plaintext message up by delta
         # obtain delta by rounding down q/t to the nearest integer
         delta = int(math.floor(self.rlwe.Rq.modulus / self.rlwe.Rt.modulus))
@@ -218,6 +214,7 @@ class BFV:
         self,
         public_key: tuple[Polynomial, Polynomial],
         m: Polynomial,
+        u: Polynomial,
     ):
         """
         Encrypt a given message m with a given public_key setting e0 and e1 to 0. This is used for the constant multiplication and addition.
@@ -225,12 +222,11 @@ class BFV:
         Parameters:
         - public_key: Public key.
         - m: message.
+        - u: polynomial sampled from the distribution χ Ternary.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
-        # Polynomials u is sampled from the distribution χ Ternary
-        u = self.rlwe.SampleFromTernaryDistribution()
 
         # Scale the plaintext message up by delta
         # obtain delta by rounding down q/t to the nearest integer
@@ -408,24 +404,24 @@ class BFVCrt:
 
 
     def PublicKeyGen(
-        self, s: Polynomial
+        self, s: Polynomial, e: Polynomial, ais: list[Polynomial]
     ) -> [tuple[Polynomial, Polynomial]]:
         """
         Generate a set of public keys for each crt basis from a given secret key.
 
         Parameters:
         - s: Secret key.
+        - e: polynomial sampled from the distribution χ Error.
+        - ais: list of polynomials sampled from the ring Rqi.
 
         Returns: Generated public keys
         """
 
         public_keys = []
-        # Sample a polynomial e from the distribution χ Error
-        e = self.bfv_q.rlwe.SampleFromErrorDistribution()
 
         for i in range(len(self.crt_moduli.qis)):
-            # Sample a polynomial a from Rqi
-            a = self.bfv_qis[i].rlwe.Rq.sample_polynomial()
+
+            a = ais[i]
 
             # a * s
             mul = a * s
@@ -450,6 +446,9 @@ class BFVCrt:
         self,
         public_keys: [tuple[Polynomial, Polynomial]],
         m: Polynomial,
+        e0: Polynomial,
+        e1: Polynomial,
+        u: Polynomial,
     ) -> list[tuple[Polynomial, Polynomial]]:
         """
         Encrypt a given message m with a given list of public_keys.
@@ -457,15 +456,14 @@ class BFVCrt:
         Parameters:
         - public_keys: Public keys. The public key must be a list of tuple of polynomials living in the ring of self.rlwe.Rqi.
         - m: message. This must be a polynomial in Rt.
+        - e0: polynomial sampled from the distribution χ Error.
+        - e1: polynomial sampled from the distribution χ Error.
+        - u: polynomial sampled from the distribution χ Ternary.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
         ciphertexts = []
-        # Polynomials e0, e1 are sampled the distribution χ Error
-        e0 = self.bfv_q.rlwe.SampleFromErrorDistribution()
-        e1 = self.bfv_q.rlwe.SampleFromErrorDistribution()
-        u = self.bfv_q.rlwe.SampleFromTernaryDistribution()
         self.delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
 
         for i, public_key_qi in enumerate(public_keys):

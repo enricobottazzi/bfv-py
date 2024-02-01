@@ -1,15 +1,4 @@
 from bfv.polynomial import Polynomial, get_centered_remainder
-
-def mod_inverse(t, q):
-    """
-    Computes the multiplicative inverse of t modulo q.
-    Returns the inverse, or raises an exception if it doesn't exist.
-    """
-    g, x, _ = extended_gcd(t, q)
-    if g != 1:
-        raise ValueError("The multiplicative inverse does not exist")
-    else:
-        return x % q
     
 def mod_inverse_centered(t, q):
     """
