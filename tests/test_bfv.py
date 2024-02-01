@@ -154,7 +154,7 @@ class TestBFV(unittest.TestCase):
             public_key, message, e0, e1, u
         )
 
-        dec = self.bfv.PubKeyDecrypt(secret_key, ciphertext)
+        dec = self.bfv.Decrypt(secret_key, ciphertext)
 
         # ensure that message and dec are the same
         for i in range(len(message.coefficients)):
@@ -166,7 +166,7 @@ class TestBFV(unittest.TestCase):
 
         ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message)
 
-        dec = self.bfv.SecretKeyDecrypt(secret_key, ciphertext)
+        dec = self.bfv.Decrypt(secret_key, ciphertext)
 
         # ensure that message and dec are the same
         for i in range(len(message.coefficients)):
@@ -220,7 +220,7 @@ class TestBFV(unittest.TestCase):
         self.assertTrue(len(ciphertext_sum[0].coefficients) <= self.bfv.rlwe.n)
 
         # decrypt ciphertext_sum
-        dec = self.bfv.PubKeyDecrypt(secret_key, ciphertext_sum)
+        dec = self.bfv.Decrypt(secret_key, ciphertext_sum)
 
         # ensure that message_sum and dec are the same
         for i in range(len(message_sum.coefficients)):
@@ -252,7 +252,7 @@ class TestBFV(unittest.TestCase):
         ciphertext_sum = self.bfv.EvalAdd(ciphertext1, const_ciphertext)
 
         # decrypt ciphertext_sum
-        dec = self.bfv.PubKeyDecrypt(secret_key, ciphertext_sum)
+        dec = self.bfv.Decrypt(secret_key, ciphertext_sum)
 
         # ensure that message_sum and dec are the same
         for i in range(len(message_sum.coefficients)):
@@ -320,7 +320,7 @@ class TestBFVVWithCRT(unittest.TestCase):
 
         ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message, e0, e1, u)
 
-        message_prime = self.bfv_crt.PubKeyDecrypt(s, ciphertexts)
+        message_prime = self.bfv_crt.Decrypt(s, ciphertexts)
 
         assert message_prime == message
 
@@ -333,12 +333,41 @@ class TestBFVVWithCRT(unittest.TestCase):
 
         pub_keys = self.bfv_crt.PublicKeyGen(s, e, ais)
         message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
-        
+
         e0 = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
         e1 = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
         u = self.bfv_crt.bfv_q.rlwe.SampleFromTernaryDistribution()
 
         ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message, e0, e1, u)        
-        message_prime = self.bfv_crt.PubKeyDecryptDummy(s, ciphertexts)
+        message_prime = self.bfv_crt.DecryptDummy(s, ciphertexts)
+
+        assert message_prime == message
+
+    def test_valid_secret_key_decryption(self):
+        s = self.bfv_crt.SecretKeyGen()
+        e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
+        ais = []
+        for i in range(len(self.crt_moduli.qis)):
+            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+
+        message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
+
+        ciphertexts = self.bfv_crt.SecretKeyEncrypt(s, ais, e, message)
+
+        message_prime = self.bfv_crt.Decrypt(s, ciphertexts)
+
+        assert message_prime == message
+
+    def test_valid_dummy_secret_key_decryption(self):
+        s = self.bfv_crt.SecretKeyGen()
+        e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
+        ais = []
+        for i in range(len(self.crt_moduli.qis)):
+            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+
+        message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
+
+        ciphertexts = self.bfv_crt.SecretKeyEncrypt(s, ais, e, message)
+        message_prime = self.bfv_crt.DecryptDummy(s, ciphertexts)
 
         assert message_prime == message

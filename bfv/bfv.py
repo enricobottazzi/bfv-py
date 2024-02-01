@@ -257,7 +257,7 @@ class BFV:
 
         return ciphertext
 
-    def PubKeyDecrypt(
+    def Decrypt(
         self,
         secret_key: Polynomial,
         ciphertext: tuple[Polynomial, Polynomial],
@@ -301,49 +301,6 @@ class BFV:
 
         # reduce the quotient in Rt
         quotient_poly.reduce_in_ring(self.rlwe.Rt)
-
-        return quotient_poly
-
-    def SecretKeyDecrypt(
-        self,
-        secret_key: Polynomial,
-        ciphertext: tuple[Polynomial, Polynomial],
-    ):
-        """
-        Decrypt a given ciphertext (encrypted using secret key encryption) with a given secret key.
-
-        Parameters:
-        - secret_key: Secret key.
-        - ciphertext: Ciphertext.
-
-        Returns: Decrypted message.
-        """
-        ct0 = ciphertext[0]
-        ct1 = ciphertext[1]
-        s = secret_key
-        t = self.rlwe.Rt.modulus
-        q = self.rlwe.Rq.modulus
-
-        ct1_s = ct1 * s
-
-        # ct0 + ct1*s
-        numerator = ct0 + ct1_s
-
-        # reduce the numerator in Rq
-        numerator.reduce_in_ring(self.rlwe.Rq)
-
-        # scale the num down by t/q 
-        num = [coeff * t for coeff in numerator.coefficients]
-
-        quotient = [coeff / q for coeff in num]
-
-        # round the coefficients of quotient to the nearest integer
-        quotient = [round(coeff) for coeff in quotient]
-
-        # trim leading zeros
-        quotient = np.trim_zeros(quotient, "f")
-
-        quotient_poly = Polynomial(quotient)
 
         return quotient_poly
 
@@ -414,7 +371,7 @@ class BFVCrt:
         - e: polynomial sampled from the distribution χ Error.
         - ais: list of polynomials sampled from the ring Rqi.
 
-        Returns: Generated public keys
+        Returns: Generated public keys in their CRT representation.
         """
 
         public_keys = []
@@ -461,15 +418,15 @@ class BFVCrt:
         - u: polynomial sampled from the distribution χ Ternary.
 
         Returns:
-        ciphertext: Generated ciphertext.
+        ciphertexts: Generated ciphertext in their CRT representation.
         """
         ciphertexts = []
-        self.delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
+        delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
 
         for i, public_key_qi in enumerate(public_keys):
 
             # scaled_message = delta * m
-            scaled_message = Polynomial([self.delta]) * m
+            scaled_message = Polynomial([delta]) * m
 
             # pk0 * u
             pk0_u = public_key_qi[0] * u
@@ -495,7 +452,56 @@ class BFVCrt:
 
         return ciphertexts
     
-    def PubKeyDecrypt(
+    def SecretKeyEncrypt(
+        self,
+        s: Polynomial,
+        ais: list[Polynomial],
+        e: Polynomial,
+        m: Polynomial,
+    ) -> list[tuple[Polynomial, Polynomial]]:
+        """
+        Encrypt a given message m with a given secret key .
+
+        Parameters:
+        - s: Secret key.
+        - ais: list of polynomials sampled from the ring Rqi.
+        - e: polynomial sampled from the distribution χ Error.
+        - m: message. This must be a polynomial in Rt.
+
+        Returns:
+        ciphertexts: Generated ciphertext in their CRT representation.
+        """
+
+        ciphertexts = []
+        delta = int(math.floor(self.bfv_q.rlwe.Rq.modulus / self.bfv_q.rlwe.Rt.modulus))
+
+        for i, a in enumerate(ais):
+            # scaled_message = delta * m
+            scaled_message = Polynomial([delta]) * m
+
+            # a * s
+            mul = a * s
+
+            # b = a*s + e.
+            b = mul + e
+
+            # ct_0 = a*s + e + delta * m
+            ct_0 = b + scaled_message
+
+            # ct_0 will be in Rqi
+            ct_0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
+
+            # ct_1 = -a
+            ct_1 = a * Polynomial([-1])
+
+            ciphertext = (ct_0, ct_1)
+
+            ciphertexts.append(ciphertext)
+
+        return ciphertexts
+
+    
+    def Decrypt(
         self,
         s: Polynomial,
         ciphertexts: list[tuple[Polynomial, Polynomial]],
@@ -550,7 +556,7 @@ class BFVCrt:
 
         return Polynomial(message)
 
-    def PubKeyDecryptDummy(
+    def DecryptDummy(
         self,
         s: Polynomial,
         ciphertexts: list[tuple[Polynomial, Polynomial]],
@@ -584,6 +590,7 @@ class BFVCrt:
         ciphertext = (ct0_rq, ct1_rq)
 
         # Perform decryption in Rq basis
-        dec = self.bfv_q.PubKeyDecrypt(s, ciphertext)
+        dec = self.bfv_q.Decrypt(s, ciphertext)
 
         return dec
+    
