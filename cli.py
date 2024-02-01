@@ -40,15 +40,14 @@ def main(args):
     print(f"Time to generate public key: {pk_gen_elapsed_time:.6f} seconds")
 
     # Add zeroes at the beginning of the u polynomial to make it the same degree as the public key
-    u.coefficients = np.concatenate((np.zeros(n - len(u.coefficients)), u.coefficients))
+    u.coefficients = u.coefficients = [0] * (n - len(u.coefficients)) + u.coefficients
 
     # Generate message (plaintext)
     message = bfv.rlwe.Rt.sample_polynomial()
 
     # Add zeroes at the beginning of the message polynomial to make it the same degree as the public key
-    message.coefficients = np.concatenate(
-        (np.zeros(n - len(message.coefficients)), message.coefficients)
-    )
+    message.coefficients = message.coefficients = [0] * (n - len(message.coefficients)) + u.coefficients
+
 
     encrypt_start_time = time.time()
 
@@ -67,7 +66,7 @@ def main(args):
 
     decrypt_start_time = time.time()
     # Decrypt ciphertext
-    dec = bfv.PubKeyDecrypt(secret_key, ciphertext)
+    dec = bfv.Decrypt(secret_key, ciphertext)
 
     decrypt_end_time = time.time()
     decrypt_elapsed_time = decrypt_end_time - decrypt_start_time
