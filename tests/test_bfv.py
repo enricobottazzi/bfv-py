@@ -267,33 +267,6 @@ class TestBFVVWithCRT(unittest.TestCase):
             for coeff in pub_keys[i][1].coefficients:
                 self.assertTrue(coeff >= lower_bound and coeff <= upper_bound)
 
-    def test_valid_public_key_encryption(self):
-        s = self.bfv_crt.SecretKeyGen()
-        pub_keys = self.bfv_crt.PublicKeyGen(s)
-        message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
-        ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message)
-
-        ct0_rqis = []
-        ct1_rqis = []
-
-        for i in range(len(self.crt_moduli.qis)):
-            ct0_rqis.append(ciphertexts[i][0])
-            ct1_rqis.append(ciphertexts[i][1])
-
-        # Recover ciphertext in Rq
-        c0 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
-            ct0_rqis, self.n, self.crt_moduli
-        )
-        c1 = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
-            ct1_rqis, self.n, self.crt_moduli
-        )
-
-        # Perform decryption in Rq basis
-        dec = self.bfv_crt.bfv_q.PubKeyDecrypt(s, (c0, c1))
-
-        # Assert that the two decryptions are the same
-        self.assertEqual(dec.coefficients, message.coefficients)
-
     def test_valid_public_key_decryption(self):
         s = self.bfv_crt.SecretKeyGen()
         pub_keys = self.bfv_crt.PublicKeyGen(s)
@@ -301,5 +274,15 @@ class TestBFVVWithCRT(unittest.TestCase):
         ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message)
 
         message_prime = self.bfv_crt.PubKeyDecrypt(s, ciphertexts)
+
+        assert message_prime == message
+
+    def test_valid_dummy_public_key_decryption(self):
+        s = self.bfv_crt.SecretKeyGen()
+        pub_keys = self.bfv_crt.PublicKeyGen(s)
+        message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
+        ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message)
+        
+        message_prime = self.bfv_crt.PubKeyDecryptDummy(s, ciphertexts)
 
         assert message_prime == message

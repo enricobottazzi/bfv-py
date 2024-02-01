@@ -1,6 +1,6 @@
 from .polynomial import PolynomialRing, Polynomial, get_centered_remainder
 from .discrete_gauss import DiscreteGaussian
-from .crt import CRTModuli
+from .crt import CRTModuli, CRTPolynomial
 from .utils import mod_inverse_centered
 import numpy as np
 import math
@@ -378,6 +378,19 @@ class BFV:
     
 class BFVCrt:
     def __init__(self, crt_moduli: CRTModuli, n: int, t: int, discrete_gauss: DiscreteGaussian):
+        """
+        Initialize a BFV instance starting from:
+
+        - crt_moduli: CRTModuli instance representing the CRT decomposition of the modulus q of the ciphertext space.
+        - n: degree of the f(x) which is the denominator of the polynomial ring, must be a power of 2.
+        - t: modulus t of the plaintext space
+        - discrete_gauss: Error distribution (e.g. Gaussian).
+
+        Using the Chinese Remainder Theorem (CRT), an integer x ∈ Zq can be represented
+        by its CRT components {xi = x mod qi ∈ Zqi }i, and operations on x in Zq can
+        be implemented by applying the same operations to each CRT component xi
+        in its own ring Zqi
+        """
         self.crt_moduli = crt_moduli
         self.bfv_q = BFV(RLWE(n, crt_moduli.q, t, discrete_gauss))
         self.bfv_qis = []
@@ -491,6 +504,7 @@ class BFVCrt:
     ) -> Polynomial:
         """
         Decrypts a set of ciphertexts in their CRT representation given a secret key.
+        This decryption implements the technique described in https://eprint.iacr.org/2018/117
 
         Parameters:
         - ciphertexts: Ciphertexts expressed in their CRT representation.
@@ -538,6 +552,40 @@ class BFVCrt:
 
         return Polynomial(message)
 
+    def PubKeyDecryptDummy(
+        self,
+        s: Polynomial,
+        ciphertexts: list[tuple[Polynomial, Polynomial]],
+    ) -> Polynomial:
+        """
+        Decrypts a set of ciphertexts in their CRT representation given a secret key.
+        This dummy approach recovers the ciphertext in the ring Rq and then decrypts it using the BFV scheme.
+
+        Parameters:
+        - ciphertexts: Ciphertexts expressed in their CRT representation.
+        - s: Secret key.
+
+        Returns: Decrypted message.
+        """
         
+        ct0_rqis = []
+        ct1_rqis = []
 
+        for i in range(len(self.crt_moduli.qis)):
+            ct0_rqis.append(ciphertexts[i][0])
+            ct1_rqis.append(ciphertexts[i][1])
+        
+        # Recover ciphertext in Rq
+        ct0_rq = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            ct0_rqis, self.bfv_q.rlwe.n, self.crt_moduli
+        )
+        ct1_rq = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
+            ct1_rqis, self.bfv_q.rlwe.n, self.crt_moduli
+        )
 
+        ciphertext = (ct0_rq, ct1_rq)
+
+        # Perform decryption in Rq basis
+        dec = self.bfv_q.PubKeyDecrypt(s, ciphertext)
+
+        return dec
