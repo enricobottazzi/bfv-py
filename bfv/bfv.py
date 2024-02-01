@@ -420,8 +420,8 @@ class BFVCrt:
 
         for i, public_key_qi in enumerate(public_keys):
 
-            scaling_factor_den = mod_inverse(self.bfv_q.rlwe.Rt.modulus, self.crt_moduli.qis[i]) * -1
-            scaled_message = partial_scaled_message * Polynomial([scaling_factor_den])
+            negative_mod_inverse_t = mod_inverse(self.bfv_q.rlwe.Rt.modulus, self.crt_moduli.qis[i]) * -1
+            scaled_message = partial_scaled_message * Polynomial([negative_mod_inverse_t])
 
             # pk0 * u
             pk0_u = public_key_qi[0] * u
