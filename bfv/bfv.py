@@ -167,21 +167,21 @@ class BFV:
         self,
         secret_key: Polynomial,
         m: Polynomial,
+        a: Polynomial,
+        e: Polynomial,
     ) -> tuple[Polynomial, Polynomial]:
         """
         Encrypt a given message m with a given secret key .
 
         Parameters:
         - secret_key: Polynomial sampled from the ternary distribution χ Ternary.
-        - a: polynomial sampled from the ring Rq. When using the Chinese Remainder Theorem, this is the polynomial sampled from the small ciphertext space.
         - m: message. This must be a polynomial in Rt.
+        - a: polynomial sampled from the ring Rq.
+        - e: polynomial sampled from the distribution χ Error.
 
         Returns:
         ciphertext: Generated ciphertext.
         """
-
-        a = self.rlwe.Rq.sample_polynomial()
-        e = self.rlwe.SampleFromErrorDistribution()
 
         # scale the message as round(Q*m/t)
         factor = Decimal(self.rlwe.Rq.modulus) / Decimal(self.rlwe.Rt.modulus)

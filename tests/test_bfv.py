@@ -163,8 +163,10 @@ class TestBFV(unittest.TestCase):
     def test_valid_secret_key_decryption(self):
         secret_key = self.bfv.SecretKeyGen()
         message = self.bfv.rlwe.Rt.sample_polynomial()
+        a = self.bfv.rlwe.Rq.sample_polynomial()
+        e = self.bfv.rlwe.SampleFromErrorDistribution()
 
-        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message)
+        ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message, a, e)
 
         dec = self.bfv.Decrypt(secret_key, ciphertext)
 
