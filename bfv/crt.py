@@ -7,8 +7,7 @@ from .utils import mod_inverse_centered
 class CRTModuli:
     def __init__(self, qis: List[int]):
         """
-        Initialize a CRTModuli object from the list of small moduli qis.
-        CRTModuli = q1 * q2 * ... * qn
+        Initialize a CRTModuli object from the list of small moduli qis such that q = q1 * q2 * ... * qn
         """
         q = 1
         # qis should be same size single precision integers of 60 bits (or less)
@@ -34,7 +33,7 @@ class CRTInteger:
     @staticmethod
     def from_crt_components(crt_moduli: CRTModuli, xis: List[int]) -> "CRTInteger":
         """
-        Initialize a CRTInteger object from the list of CRT components xis, which are integers in [0, qi) for each qi in qis, and the object CRTModuli, which contains the big modulus q and the list of small moduli qis.
+        Initialize a CRTInteger object from the list of CRT components xis, which are integers in [0, qi) for each qi in qis, and the object CRTModuli, which contains the modulus q and the list of moduli qis such that q = q1 * q2 * ... * qn
         """
         assert len(xis) == len(
             crt_moduli.qis
@@ -47,7 +46,7 @@ class CRTInteger:
     @staticmethod
     def from_integer(crt_moduli: CRTModuli, x: int) -> "CRTInteger":
         """
-        Initialize a CRTInteger object from the integer x, which is in [0, q), and the object CRTModuli, which contains the big modulus q and the list of small moduli qis.
+        Initialize a CRTInteger object from the integer x, which is in [0, q), and the object CRTModuli, which contains the modulus q and the list of moduli qis such that q = q1 * q2 * ... * qn
         """
         assert x < crt_moduli.q, "x should lie in [0, q)"
         xis = []
@@ -99,7 +98,7 @@ class CRTPolynomial:
         Parameters:
         - rq_polynomial: polynomial in R_q
         - n: degree of the f(x) which is the denominator of the polynomial ring, must be a power of 2.
-        - crt_moduli: object of type CRTModuli, which contains the big modulus q and the list of small moduli qis
+        - crt_moduli: object of type CRTModuli, which contains the modulus q and the list of moduli qis such that q = q1 * q2 * ... * qn
 
         Returns: list of polynomials in R_qi
         """
@@ -123,7 +122,7 @@ class CRTPolynomial:
         Parameters:
         - rqi_polynomials: list of polynomials in R_qi
         - n: degree of the f(x) which is the denominator of the polynomial ring, must be a power of 2.
-        - crt_moduli: object of type CRTModuli, which contains the big modulus q and the list of small moduli qis
+        - crt_moduli: object of type CRTModuli, which contains the modulus q and the list of moduli qis such that q = q1 * q2 * ... * qn
 
         Returns: polynomial in R_q
         """

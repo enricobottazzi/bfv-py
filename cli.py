@@ -3,7 +3,6 @@ import json
 from bfv.polynomial import Polynomial
 from bfv.utils import adjust_negative_coefficients
 
-import numpy as np
 from bfv.bfv import BFV, RLWE
 from bfv.discrete_gauss import DiscreteGaussian
 import time
@@ -78,7 +77,7 @@ def main(args):
             message.coefficients[i] == dec.coefficients[i]
         ), "Message and dec do not match"
 
-    # Convert public key to JSON and save to file
+    # Convert input to JSON and save to file
     with open(args.output, "w") as f:
         json.dump(
             {
