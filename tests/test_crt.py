@@ -2,34 +2,15 @@ import unittest
 
 from bfv.crt import CRTModuli, CRTInteger, CRTPolynomial
 import random as rand
-
 from bfv.polynomial import PolynomialRing
-
+from bfv.utils import find_pairwise_coprimes
+from random import getrandbits
 
 class TestQ(unittest.TestCase):
     def test_init_q_valid(self):
-        qis = [2, 3, 5]
-        crt_moduli = CRTModuli(qis)
-        self.assertEqual(crt_moduli.qis, qis)
 
-    def test_init_q_valid_2(self):
-        qis = [
-            1152921504606584833,
-            1152921504598720513,
-            1152921504597016577,
-            1152921504595968001,
-            1152921504595640321,
-            1152921504593412097,
-            1152921504592822273,
-            1152921504592429057,
-            1152921504589938689,
-            1152921504586530817,
-            1152921504585547777,
-            1152921504583647233,
-            1152921504581877761,
-            1152921504581419009,
-            1152921504580894721,
-        ]
+        start = getrandbits(59)
+        qis = find_pairwise_coprimes(start, 15)
         crt_moduli = CRTModuli(qis)
         self.assertEqual(crt_moduli.qis, qis)
 
