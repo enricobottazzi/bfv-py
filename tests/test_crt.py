@@ -3,14 +3,14 @@ import unittest
 from bfv.crt import CRTModuli, CRTInteger, CRTPolynomial
 import random as rand
 from bfv.polynomial import PolynomialRing
-from bfv.utils import find_pairwise_coprimes
+from bfv.utils import find_odd_pairwise_coprimes
 from random import getrandbits
 
 class TestQ(unittest.TestCase):
     def test_init_q_valid(self):
 
         start = getrandbits(59)
-        qis = find_pairwise_coprimes(start, 15)
+        qis = find_odd_pairwise_coprimes(start, 15)
         crt_moduli = CRTModuli(qis)
         self.assertEqual(crt_moduli.qis, qis)
 

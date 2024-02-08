@@ -3,7 +3,7 @@ from bfv.discrete_gauss import DiscreteGaussian
 from bfv.polynomial import PolynomialRing, Polynomial
 from bfv.bfv import RLWE, BFV, BFVCrt
 from bfv.crt import CRTModuli
-from bfv.utils import find_pairwise_coprimes
+from bfv.utils import find_odd_pairwise_coprimes
 from random import getrandbits
 
 class TestRLWE(unittest.TestCase):
@@ -266,7 +266,7 @@ class TestBFVVWithCRT(unittest.TestCase):
     # The bigmodulus q is intepreted as a product of small moduli qis.
     def setUp(self):
         start = getrandbits(59)
-        qis = find_pairwise_coprimes(start, 15)
+        qis = find_odd_pairwise_coprimes(start, 15)
         self.crt_moduli = CRTModuli(qis)
         self.n = 1024
         sigma = 3.2
