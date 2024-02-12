@@ -43,6 +43,9 @@ class PolynomialRing:
 
 class Polynomial:
     def __init__(self, coefficients: list[int]):
+        """
+        Initialize a polynomial with the given coefficients starting from the highest degree coefficient.
+        """
         self.coefficients = coefficients
 
     def reduce_coefficients_by_modulus(self, modulus: int) -> None:

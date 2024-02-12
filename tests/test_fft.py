@@ -2,6 +2,7 @@ import unittest
 from bfv.fft import find_n_th_roots_of_unity, recursive_fft, recursive_ifft
 from bfv.polynomial import poly_mul
 import math
+import copy
 import random
 
 
@@ -47,25 +48,22 @@ class TestFFT(unittest.TestCase):
 
         # turn the polynomial back into its coefficient form using IFFT O(n log n)
         ifft_coeffs = recursive_ifft(fft_evals)
+        
+        assert coeffs == ifft_coeffs
                 
-        # divide the coefficients by n
-        ifft_coeffs = [ifft_coeff / len(coeffs) for ifft_coeff in ifft_coeffs]       
-
-        # round the real part of the complex numbers
-        recovered_coeffs = [round(ifft_coeff.real) for ifft_coeff in ifft_coeffs] 
-
-        # assert that the two methods give the same result
-        for i in range(len(coeffs)):
-            assert coeffs[i] == recovered_coeffs[i]
-
     def test_poly_mul_fft(self):
-        # generate random coefficients
-        coeffs1 = [random.randint(0, 8000) for _ in range(1024)]
-        coeffs2 = [random.randint(0, 8000) for _ in range(1024)]
+
+        deg1 = random.randint(0, 1000) 
+        deg2 = random.randint(0, 1000)
+    
+        # generate random coefficients for two polynomials
+        coeffs1 = [random.randint(0, 8000) for _ in range(deg1 + 1)]
+        coeffs2 = [random.randint(0, 8000) for _ in range(deg2 + 1)]
 
         product_len = len(coeffs1) + len(coeffs2) - 1
 
-        # pad the coefficients with zeroes at the beginning to make them the same length of product_len
+        # pad the coefficients with zeroes at the beginning to make them the same length of product_len (https://math.stackexchange.com/questions/764727/concrete-fft-polynomial-multiplication-example/764870#764870)
+        # that's because we need to be able to compute #product_len points during convolution
         coeffs1 = [0] * (product_len - len(coeffs1)) + coeffs1
         coeffs2 = [0] * (product_len - len(coeffs2)) + coeffs2
 
@@ -74,16 +72,19 @@ class TestFFT(unittest.TestCase):
         while n < product_len:
             n *= 2
         
-        # further pad the coefficients with zeroes at the beginning to make them the same length of n
+        # further pad the coefficients with zeroes at the beginning to make them of length n (power of two)
         coeffs1 = [0] * (n - product_len) + coeffs1
         coeffs2 = [0] * (n - product_len) + coeffs2
 
-        assert len(coeffs1) == n
-        assert len(coeffs2) == n
+        coeffs1_reversed = copy.deepcopy(coeffs1)
+        coeffs2_reversed = copy.deepcopy(coeffs2)
+
+        coeffs1_reversed.reverse()
+        coeffs2_reversed.reverse()
 
         # turn the polynomials into their point form using FFT O(n log n)
-        fft_evals1 = recursive_fft(coeffs1)
-        fft_evals2 = recursive_fft(coeffs2)
+        fft_evals1 = recursive_fft(coeffs1_reversed)
+        fft_evals2 = recursive_fft(coeffs2_reversed)
 
         # multiply the polynomials in point form to get the product in point form O(n)
         fft_product_evals = [fft_evals1[i] * fft_evals2[i] for i in range(n)]
@@ -91,22 +92,24 @@ class TestFFT(unittest.TestCase):
         # turn the product back into its coefficient form using IFFT O(n log n)
         product_coeffs = recursive_ifft(fft_product_evals)
 
-        # divide the coefficients by n
-        product_coeffs = [coeff / n for coeff in product_coeffs]       
-
-        # round the real part of the complex numbers
-        product_coeffs = [round(coeff.real) for coeff in product_coeffs]
+        # calculate the padding for product_coeffs
+        product_padding = len(product_coeffs) - product_len
         
-        # perform naive polynomial multiplication
+        # remove the last padding zeroes
+        product_coeffs_no_pad = product_coeffs[:-product_padding]
+
+        # reverse the product_coeffs_no_pad list to obtain an array in which the first element is the highest degree coefficient
+        product_coeffs_no_pad.reverse()
+
+        # perform the multiplication between `coeffs1` and `coeffs2` naively
         product_naive = poly_mul(coeffs1, coeffs2)
 
-        # remove the leading zeroes from product_naive
-        while product_naive[0] == 0:
-            product_naive = product_naive[1:]
+        product_naive_padding = len(product_naive) - product_len
 
-        # remove the last zeroes from product_coeffs
-        while product_coeffs[-1] == 0:
-            product_coeffs = product_coeffs[:-1]
+        # remove the first padding zeroes
+        product_coeffs_naive_no_pad = product_naive[product_naive_padding:]
 
-        # assert that the two methods give the same result
-        assert product_naive == product_coeffs
+        assert product_coeffs_naive_no_pad == product_coeffs_no_pad
+
+
+

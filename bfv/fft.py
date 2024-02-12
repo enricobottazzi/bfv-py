@@ -24,10 +24,7 @@ def recursive_fft(a: List[int]) -> List[complex]:
             w = w * w_n
         return y
     
-def recursive_ifft(y: List[complex]) -> List[complex]:
-    """
-    Compute the recursive IFFT of a list of complex numbers
-    """
+def uscaled_recursive_ifft(y: List[complex]) -> List[complex]:
     n = len(y)
     if n == 1:
         return y
@@ -37,14 +34,24 @@ def recursive_ifft(y: List[complex]) -> List[complex]:
         w = 1
         y_even = [y[i] for i in range(0, n, 2)]
         y_odd = [y[i] for i in range(1, n, 2)]
-        a_even = recursive_ifft(y_even)
-        a_odd = recursive_ifft(y_odd)
+        a_even = uscaled_recursive_ifft(y_even)
+        a_odd = uscaled_recursive_ifft(y_odd)
         a = [complex(0, 0)] * n
         for k in range(n // 2):
             a[k] = a_even[k] + w * a_odd[k]
             a[k + n // 2] = a_even[k] - w * a_odd[k]
             w = w * w_n
         return a
+
+def recursive_ifft(y: List[complex]) -> List[complex]:
+    """
+    Compute the recursive IFFT of a list of complex numbers
+    Check https://stackoverflow.com/questions/48572647/recursive-inverse-fft 
+    """
+    coeffs = uscaled_recursive_ifft(y)
+    coeffs = [coeff / len(coeffs) for coeff in coeffs]       
+    coeffs = [round(coeff.real) for coeff in coeffs] 
+    return coeffs
 
 def find_n_th_roots_of_unity(n: int) -> List[complex]:
     """
