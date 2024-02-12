@@ -1,6 +1,5 @@
 from typing import List
-import cmath
-from math import pi, e
+from mpmath import *
 
 def recursive_fft(a: List[int]) -> List[complex]:
     """
@@ -49,14 +48,14 @@ def recursive_ifft(y: List[complex]) -> List[complex]:
     Check https://stackoverflow.com/questions/48572647/recursive-inverse-fft 
     """
     coeffs = uscaled_recursive_ifft(y)
-    coeffs = [coeff / len(coeffs) for coeff in coeffs]       
-    coeffs = [round(coeff.real) for coeff in coeffs] 
+    coeffs = [coeff / len(coeffs) for coeff in coeffs]     
+    coeffs = [nint(coeff.real) for coeff in coeffs]  
     return coeffs
 
 def find_n_th_roots_of_unity(n: int) -> List[complex]:
     """
     Find the n-th roots of unity.
     """
-    roots = [cmath.exp(2j * cmath.pi * i / n) for i in range(n)]
+    roots = [exp(2j * pi * i / n) for i in range(n)]
 
     return roots

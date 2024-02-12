@@ -1,4 +1,6 @@
+from bfv.fft import recursive_fft, recursive_ifft
 import random
+import copy
 
 class PolynomialRing:
     def __init__(self, n: int, modulus: int) -> None:
@@ -127,17 +129,50 @@ def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[i
 
 
 def poly_mul(poly1: list[int], poly2: list[int]) -> list[int]:
-    # The degree of the product polynomial is the sum of the degrees of the input polynomials
-    result_degree = len(poly1) + len(poly2) - 1
-    # Initialize the product polynomial with zeros
-    product = [0] * result_degree
 
-    # Multiply each term of the first polynomial by each term of the second polynomial
-    for i in range(len(poly1)):
-        for j in range(len(poly2)):
-            product[i + j] += poly1[i] * poly2[j]
+    product_len = len(poly1) + len(poly2) - 1
 
-    return product
+    # pad the coefficients with zeroes at the beginning to make them the same length of product_len (https://math.stackexchange.com/questions/764727/concrete-fft-polynomial-multiplication-example/764870#764870)
+    # that's because we need to be able to compute #product_len points during convolution
+    poly1_padded = [0] * (product_len - len(poly1)) + poly1
+    poly2_padded = [0] * (product_len - len(poly2)) + poly2
+
+    # fft works when the length of the coefficients is a power of 2
+    n = 1
+    while n < product_len:
+        n *= 2
+    
+    # further pad the coefficients with zeroes at the beginning to make them of length n (power of two)
+    poly1_padded = [0] * (n - product_len) + poly1_padded
+    poly2_padded = [0] * (n - product_len) + poly2_padded
+
+    poly1_reversed = copy.deepcopy(poly1_padded)
+    poly2_reversed = copy.deepcopy(poly2_padded)
+
+    poly1_reversed.reverse()
+    poly2_reversed.reverse()
+
+    # turn the polynomials into their point form using FFT O(n log n)
+    fft_evals1 = recursive_fft(poly1_reversed)
+    fft_evals2 = recursive_fft(poly2_reversed)
+
+    # multiply the polynomials in point form to get the product in point form O(n)
+    fft_product_evals = [fft_evals1[i] * fft_evals2[i] for i in range(n)]
+
+    # turn the product back into its coefficient form using IFFT O(n log n)
+    product_coeffs = recursive_ifft(fft_product_evals)
+
+    # calculate the padding for product_coeffs
+    product_padding = len(product_coeffs) - product_len
+
+    product_coeffs_no_pad = product_coeffs[:-product_padding] if product_padding else product_coeffs[:]
+
+    # reverse the product_coeffs_no_pad list to obtain an array in which the first element is the highest degree coefficient
+    product_coeffs_no_pad.reverse()
+
+    product_coeffs = [int(coeff.real) for coeff in product_coeffs_no_pad]
+
+    return product_coeffs
 
 
 def poly_add(poly1: list[int], poly2: list[int]) -> list[int]:
@@ -167,3 +202,17 @@ def get_standard_form(x, modulus) -> int:
     """
     r = x % modulus
     return r if r >= 0 else r + modulus
+
+def poly_mul_naive(poly1: list[int], poly2: list[int]) -> list[int]:
+    """
+    Naive polynomial multiplication
+    """
+    product_len = len(poly1) + len(poly2) - 1
+    product = [0] * product_len
+
+    # Multiply each term of the first polynomial by each term of the second polynomial
+    for i in range(len(poly1)):
+        for j in range(len(poly2)):
+            product[i + j] += poly1[i] * poly2[j]
+
+    return product

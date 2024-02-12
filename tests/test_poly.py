@@ -4,11 +4,13 @@ from bfv.polynomial import (
     PolynomialRing,
     Polynomial,
     get_centered_remainder,
+    poly_mul_naive,
 )
 import random
 
 from bfv.utils import adjust_negative_coefficients
-
+from mpmath import *
+mp.dps = 50
 
 class TestPolynomialRing(unittest.TestCase):
     def test_init_with_n_and_q(self):
@@ -69,7 +71,6 @@ class TestPolynomialInRingRq(unittest.TestCase):
         result = aq1 + aq2
         assert result.coefficients == [3, 6, 6, 4, 5]
 
-
     def test_add_poly_in_ring_Rq(self):
         n = 4
         q = 7
@@ -91,48 +92,79 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         assert result.coefficients == [-1, -1, -3, -1]
 
-    def test_mul_poly_in_ring_Rq(self):
-        n = 4
-        q = 7
-        Rq = PolynomialRing(n, q)
-        coefficients_1 = [3, 0, 4]
-        coefficients_2 = [2, 0, 1]
+    def test_mul_poly_high_precision(self):
+        n = 1024
+        coeffs1 = [random.getrandbits(60) for _ in range(n)]
+        coeffs2 = [random.getrandbits(60) for _ in range(n)]
 
-        aq1 = Polynomial(coefficients_1)
-        aq2 = Polynomial(coefficients_2)
+        aq1 = Polynomial(coeffs1)
+        aq2 = Polynomial(coeffs2)
+
+        # aq1 * aq2
+        result = aq1 * aq2
+
+        # perform the multiplication naively
+        product_naive = poly_mul_naive(coeffs1, coeffs2)
+
+        assert result.coefficients == product_naive
+
+
+    def test_mul_poly_in_ring_Rq(self):
+        n = 1024
+        q = random.getrandbits(60)
+        Rq = PolynomialRing(n, q)
+        coeffs1 = [random.getrandbits(60) for _ in range(n)]
+        coeffs2 = [random.getrandbits(60) for _ in range(n)]
+
+        aq1 = Polynomial(coeffs1)
+        aq2 = Polynomial(coeffs2)
 
         # aq1 * aq2
         result = aq1 * aq2
 
         result.reduce_in_ring(Rq)
 
-        assert result.coefficients == [0, -3, 0, -2]
+        # perform the multiplication naively
+        product_naive = poly_mul_naive(coeffs1, coeffs2)
+
+        poly_product_naive = Polynomial(product_naive)
+        poly_product_naive.reduce_in_ring(Rq)
+
+        assert result.coefficients == poly_product_naive.coefficients
+
 
     def test_scalar_mul_poly_in_ring_Rq(self):
-        n = 4
-        q = 7
+        n = 1024
+        q = random.getrandbits(60)
         Rq = PolynomialRing(n, q)
-        coefficients = [4, 3, 0, 4]
-        aq1 = Polynomial(coefficients)
-        aq2 = Polynomial([2])
+        poly1 = Polynomial([random.getrandbits(60) for _ in range(n)])
+        scalar = Polynomial([2])
 
-        result = aq1 * aq2
+        result = poly1 * scalar
         result.reduce_in_ring(Rq)
 
-        assert result.coefficients == [1, -1, 0, 1]
+        # perform the scalar multiplication naively
+        product_naive = [scalar.coefficients[0] * coeff for coeff in poly1.coefficients]
+
+        poly_product_naive = Polynomial(product_naive)
+        poly_product_naive.reduce_in_ring(Rq)
+
+        for i in range(len(result.coefficients)):
+            assert result.coefficients[i] == poly_product_naive.coefficients[i]
+
 
     def test_poly_eval(self):
         # random sample 1024 coefficients in the range 0, 1152921504606584833
         coefficients_1 = []
-        for i in range(1024):
+        for _ in range(1024):
             coefficients_1.append(random.randint(0, 1152921504606584833))
         
         coefficients_2 = []
-        for i in range(1024):
+        for _ in range(1024):
             coefficients_2.append(random.randint(0, 1152921504606584833))
 
         coefficients_3 = []
-        for i in range(1024):
+        for _ in range(1024):
             coefficients_3.append(random.randint(0, 1152921504606584833))
 
         aq1 = Polynomial(coefficients_1)

@@ -1,15 +1,16 @@
 import unittest
 
 from bfv.crt import CRTModuli, CRTInteger, CRTPolynomial
-import random as rand
-from bfv.polynomial import PolynomialRing
+from bfv.polynomial import PolynomialRing, Polynomial, poly_mul_naive
 from bfv.utils import find_odd_pairwise_coprimes
-from random import getrandbits
+import random
+from mpmath import *
+mp.dps = 50
 
 class TestQ(unittest.TestCase):
     def test_init_q_valid(self):
 
-        start = getrandbits(59)
+        start = random.getrandbits(59)
         qis = find_odd_pairwise_coprimes(start, 15)
         crt_moduli = CRTModuli(qis)
         self.assertEqual(crt_moduli.qis, qis)
@@ -38,7 +39,7 @@ class TestCRTInteger(unittest.TestCase):
     def test_from_integer_valid(self):
         qis = [5, 7, 8]
         q = CRTModuli(qis)
-        x = rand.randint(0, q.q - 1)
+        x = random.randint(0, q.q - 1)
         crt_integer = CRTInteger.from_integer(q, x)
         self.assertEqual(crt_integer.xis, [x % qi for qi in q.qis])
         self.assertEqual(crt_integer.recover(), x)
@@ -117,7 +118,8 @@ class TestPolynomialWithCRT(unittest.TestCase):
     def test_valid_poly_mul_in_crt_representation(self):
         a = self.rq.sample_polynomial()
         b = self.rq.sample_polynomial()
-        c = a * b
+        c = poly_mul_naive(a.coefficients, b.coefficients)
+        c = Polynomial(c)
         c.reduce_in_ring(self.rq)
 
         # Reduce a coefficients and b coefficients to its CRT representations
@@ -135,6 +137,12 @@ class TestPolynomialWithCRT(unittest.TestCase):
             rqi = PolynomialRing(self.n, self.crt_moduli.qis[i])
             c_rqi.reduce_in_ring(rqi)
             c_rqis.append(c_rqi)
+
+            # perform the same multiplication naively
+            product_naive = poly_mul_naive(a_rqis[i].coefficients, b_rqis[i].coefficients)
+            product_naive = Polynomial(product_naive)
+            product_naive.reduce_in_ring(rqi)
+            assert c_rqi.coefficients == product_naive.coefficients
 
         # Recover c from its CRT representations
         c_recovered = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
