@@ -6,7 +6,7 @@ from bfv.crt import CRTModuli
 from bfv.utils import find_odd_pairwise_coprimes
 from random import getrandbits
 from mpmath import *
-mp.dps = 40
+mp.dps = 50
 
 class TestRLWE(unittest.TestCase):
     def setUp(self):

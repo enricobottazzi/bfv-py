@@ -10,7 +10,7 @@ import random
 
 from bfv.utils import adjust_negative_coefficients
 from mpmath import *
-mp.dps = 40
+mp.dps = 50
 
 class TestPolynomialRing(unittest.TestCase):
     def test_init_with_n_and_q(self):

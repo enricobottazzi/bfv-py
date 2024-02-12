@@ -5,7 +5,7 @@ from bfv.polynomial import PolynomialRing, Polynomial, poly_mul_naive
 from bfv.utils import find_odd_pairwise_coprimes
 import random
 from mpmath import *
-mp.dps = 40
+mp.dps = 50
 
 class TestQ(unittest.TestCase):
     def test_init_q_valid(self):
