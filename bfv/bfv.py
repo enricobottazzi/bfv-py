@@ -109,7 +109,8 @@ class BFV:
         pk0.reduce_in_ring(self.rlwe.Rq)
 
         # pk1 = -a.
-        pk1 = a * Polynomial([-1])
+        pk1 = a 
+        pk1 = pk1.scalar_mul(-1)
 
         public_key = (pk0, pk1)
 
@@ -200,7 +201,8 @@ class BFV:
         ct_0.reduce_in_ring(self.rlwe.Rq)
 
         # ct_1 = -a
-        ct_1 = a * Polynomial([-1])
+        ct_1 = a 
+        ct_1 = ct_1.scalar_mul(-1)
 
         ciphertext = (ct_0, ct_1)
 
@@ -384,7 +386,8 @@ class BFVCrt:
             pk0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
 
             # pk1 = -a.
-            pk1 = a * Polynomial([-1])
+            pk1 = a
+            pk1 = pk1.scalar_mul(-1)
 
             public_key = (pk0, pk1)
 
@@ -492,7 +495,8 @@ class BFVCrt:
             ct_0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
 
             # ct_1 = -a
-            ct_1 = a * Polynomial([-1])
+            ct_1 = a
+            ct_1 = ct_1.scalar_mul(-1)
 
             ciphertext = (ct_0, ct_1)
 

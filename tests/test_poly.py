@@ -136,13 +136,13 @@ class TestPolynomialInRingRq(unittest.TestCase):
         q = random.getrandbits(60)
         Rq = PolynomialRing(n, q)
         poly1 = Polynomial([random.getrandbits(60) for _ in range(n)])
-        scalar = Polynomial([2])
+        scalar = 3
 
-        result = poly1 * scalar
+        result = poly1.scalar_mul(scalar)
         result.reduce_in_ring(Rq)
 
         # perform the scalar multiplication naively
-        product_naive = [scalar.coefficients[0] * coeff for coeff in poly1.coefficients]
+        product_naive = [scalar * coeff for coeff in poly1.coefficients]
 
         poly_product_naive = Polynomial(product_naive)
         poly_product_naive.reduce_in_ring(Rq)

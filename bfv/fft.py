@@ -13,7 +13,7 @@ def recursive_fft(a: List[int]) -> List[complex]:
         return a
     else:
         i = 1j
-        w_n = e ** (-2 * i * pi / float(n))
+        w_n = e ** (2 * i * pi / float(n))
         w = 1
         a_even = [a[i] for i in range(0, n, 2)]
         a_odd = [a[i] for i in range(1, n, 2)]
@@ -32,7 +32,7 @@ def uscaled_recursive_ifft(y: List[complex]) -> List[complex]:
         return y
     else:
         i = 1j
-        w_n = e ** (2 * i * pi / float(n))
+        w_n = e ** (-2 * i * pi / float(n))
         w = 1
         y_even = [y[i] for i in range(0, n, 2)]
         y_odd = [y[i] for i in range(1, n, 2)]
