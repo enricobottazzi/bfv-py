@@ -99,6 +99,12 @@ class Polynomial:
         if isinstance(other, Polynomial):
             return self.coefficients == other.coefficients
         return False
+    
+    def scalar_mul(self, scalar: int) -> "Polynomial":
+        """
+        Multiply the polynomial by a scalar.
+        """
+        return Polynomial([scalar * coeff for coeff in self.coefficients])
 
 
 def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[int]]:

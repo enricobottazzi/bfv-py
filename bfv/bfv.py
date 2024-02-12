@@ -415,14 +415,14 @@ class BFVCrt:
         """
         ciphertexts = []
         # From https://eprint.iacr.org/2018/117 remark 3.1
-        partial_scaled_message = Polynomial([self.bfv_q.rlwe.Rq.modulus]) * m
+        partial_scaled_message = m.scalar_mul(self.bfv_q.rlwe.Rq.modulus)
         partial_scaled_message.reduce_coefficients_by_modulus(self.bfv_q.rlwe.Rt.modulus)
 
         for i, public_key_qi in enumerate(public_keys):
 
             negative_mod_inverse_t = mod_inverse(self.bfv_q.rlwe.Rt.modulus, self.crt_moduli.qis[i]) * -1
-            scaled_message = partial_scaled_message * Polynomial([negative_mod_inverse_t])
-
+            scaled_message = partial_scaled_message.scalar_mul(negative_mod_inverse_t)
+            
             # pk0 * u
             pk0_u = public_key_qi[0] * u
 
@@ -470,14 +470,14 @@ class BFVCrt:
         ciphertexts = []
 
         # From https://eprint.iacr.org/2018/117 remark 3.1
-        partial_scaled_message = Polynomial([self.bfv_q.rlwe.Rq.modulus]) * m
+        partial_scaled_message = m.scalar_mul(self.bfv_q.rlwe.Rq.modulus)
         partial_scaled_message.reduce_coefficients_by_modulus(self.bfv_q.rlwe.Rt.modulus)
 
         for i, a in enumerate(ais):
             
             scaling_factor_den = mod_inverse(self.bfv_q.rlwe.Rt.modulus, self.crt_moduli.qis[i]) * -1
 
-            scaled_message = partial_scaled_message * Polynomial([scaling_factor_den])
+            scaled_message = partial_scaled_message.scalar_mul(scaling_factor_den)
 
             # a * s
             mul = a * s

@@ -5,7 +5,7 @@ from bfv.polynomial import PolynomialRing, Polynomial, poly_mul_naive
 from bfv.utils import find_odd_pairwise_coprimes
 import random
 from mpmath import *
-mp.dps = 50
+mp.dps = 40
 
 class TestQ(unittest.TestCase):
     def test_init_q_valid(self):
@@ -149,5 +149,5 @@ class TestPolynomialWithCRT(unittest.TestCase):
             c_rqis, self.n, self.crt_moduli
         )
 
-        # ensure that a * b = c
+        # ensure that c_recovered = c
         assert c.coefficients == c_recovered.coefficients

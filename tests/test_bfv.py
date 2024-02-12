@@ -5,6 +5,8 @@ from bfv.bfv import RLWE, BFV, BFVCrt
 from bfv.crt import CRTModuli
 from bfv.utils import find_odd_pairwise_coprimes
 from random import getrandbits
+from mpmath import *
+mp.dps = 40
 
 class TestRLWE(unittest.TestCase):
     def setUp(self):
