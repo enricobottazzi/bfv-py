@@ -6,7 +6,6 @@ from bfv.crt import CRTModuli
 from bfv.utils import find_odd_pairwise_coprimes
 from random import getrandbits
 from mpmath import *
-mp.dps = 50
 
 class TestRLWE(unittest.TestCase):
     def setUp(self):
@@ -267,7 +266,7 @@ class TestBFV(unittest.TestCase):
 class TestBFVVWithCRT(unittest.TestCase):
     # The bigmodulus q is intepreted as a product of small moduli qis.
     def setUp(self):
-        start = getrandbits(59)
+        start = getrandbits(60)
         qis = find_odd_pairwise_coprimes(start, 15)
         self.crt_moduli = CRTModuli(qis)
         self.n = 1024

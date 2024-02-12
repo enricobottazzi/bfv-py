@@ -4,7 +4,6 @@ from bfv.polynomial import poly_mul_naive
 import random
 import copy
 from mpmath import *
-mp.dps = 50
 
 class TestFFT(unittest.TestCase):
     def test_roots_of_unity(self):

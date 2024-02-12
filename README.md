@@ -13,8 +13,11 @@ Python implementation of the BFV scheme of FHE. Only for educational purposes.
 ### Test
 
 ```bash
-$ python3 -m unittest discover tests
+export DPS=41
+python3 -m unittest discover tests
 ```
+
+`DPS` is the number of decimal places for `mpmath` library. It is used to set the precision of the floating point numbers during FFT operations. When working with 60-bit coefficients, a precision of 41 is enough to avoid any overflow.
 
 ### Generate inputs for circuit
 
@@ -29,8 +32,9 @@ The script will run through the following steps:
 6. Generation of the json file
 
 ```bash
-$ python3 cli.py --help
-$ python3 cli.py -n 1024 -q 1152921504606584833 -t 65537 --output input.json
+export DPS=41
+python3 cli.py --help
+python3 cli.py -n 1024 -q 1152921504606584833 -t 65537 --output input.json
 ```
 
 # TODOS

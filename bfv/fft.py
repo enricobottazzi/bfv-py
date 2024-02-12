@@ -1,5 +1,8 @@
 from typing import List
 from mpmath import *
+import os
+dps = os.getenv('DPS')
+mp.dps = int(dps)
 
 def recursive_fft(a: List[int]) -> List[complex]:
     """

@@ -7,10 +7,8 @@ from bfv.polynomial import (
     poly_mul_naive,
 )
 import random
-
 from bfv.utils import adjust_negative_coefficients
 from mpmath import *
-mp.dps = 50
 
 class TestPolynomialRing(unittest.TestCase):
     def test_init_with_n_and_q(self):
@@ -75,7 +73,7 @@ class TestPolynomialInRingRq(unittest.TestCase):
         n = 4
         q = 7
         Rq = PolynomialRing(n, q)
-        coefficients_1 = [3, 3, 4, 4, 4]  # r(x)
+        coefficients_1 = [3, 3, 4, 4, 4]
         r = Polynomial(coefficients_1)
 
         r.reduce_in_ring(Rq)
