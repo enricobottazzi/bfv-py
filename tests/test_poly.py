@@ -247,4 +247,3 @@ class TestCenteredRemainder(unittest.TestCase):
         self.assertEqual(
             adjust_negative_coefficients(Polynomial([0]), 7).coefficients, [0]
         )
-

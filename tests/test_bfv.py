@@ -266,8 +266,22 @@ class TestBFV(unittest.TestCase):
 class TestBFVVWithCRT(unittest.TestCase):
     # The bigmodulus q is intepreted as a product of small moduli qis.
     def setUp(self):
-        start = getrandbits(60)
-        qis = find_odd_pairwise_coprimes(start, 15)
+        qis = [1152921504606584833,
+            1152921504598720513,
+            1152921504597016577,
+            1152921504595968001,
+            1152921504595640321,
+            1152921504593412097,
+            1152921504592822273,
+            1152921504592429057,
+            1152921504589938689,
+            1152921504586530817,
+            1152921504585547777,
+            1152921504583647233,
+            1152921504581877761,
+            1152921504581419009,
+            1152921504580894721]
+
         self.crt_moduli = CRTModuli(qis)
         self.n = 1024
         sigma = 3.2

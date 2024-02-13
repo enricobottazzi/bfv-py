@@ -2,6 +2,7 @@ from .polynomial import PolynomialRing, Polynomial, get_centered_remainder
 from .discrete_gauss import DiscreteGaussian
 from .crt import CRTModuli, CRTPolynomial
 from .utils import mod_inverse_centered, mod_inverse
+from .ntt import ntt_poly_mul_centered_remainder
 import numpy as np
 from decimal import Decimal
 
@@ -376,7 +377,8 @@ class BFVCrt:
             a = ais[i]
 
             # a * s
-            mul = a * s
+            mul = ntt_poly_mul_centered_remainder(a.coefficients, s.coefficients, self.bfv_q.rlwe.n * 2, self.crt_moduli.qis[i])
+            mul = Polynomial(mul)
 
             # b = a*s + e.
             b = mul + e
@@ -427,7 +429,8 @@ class BFVCrt:
             scaled_message = partial_scaled_message.scalar_mul(negative_mod_inverse_t)
             
             # pk0 * u
-            pk0_u = public_key_qi[0] * u
+            pk0_u = ntt_poly_mul_centered_remainder(public_key_qi[0].coefficients, u.coefficients, self.bfv_q.rlwe.n * 2, self.crt_moduli.qis[i])
+            pk0_u = Polynomial(pk0_u)
 
             # scaled_message + pk0 * u + e0
             ct_0 = scaled_message + pk0_u + e0
@@ -436,7 +439,8 @@ class BFVCrt:
             ct_0.reduce_in_ring(self.bfv_qis[i].rlwe.Rq)
 
             # pk1 * u
-            pk1_u = public_key_qi[1] * u
+            pk1_u = ntt_poly_mul_centered_remainder(public_key_qi[1].coefficients, u.coefficients, self.bfv_q.rlwe.n * 2, self.crt_moduli.qis[i])
+            pk1_u = Polynomial(pk1_u)
 
             # pk1 * u + e1
             ct_1 = pk1_u + e1
@@ -483,7 +487,8 @@ class BFVCrt:
             scaled_message = partial_scaled_message.scalar_mul(scaling_factor_den)
 
             # a * s
-            mul = a * s
+            mul = ntt_poly_mul_centered_remainder(a.coefficients, s.coefficients, self.bfv_q.rlwe.n * 2, self.crt_moduli.qis[i])
+            mul = Polynomial(mul)
 
             # b = a*s + e.
             b = mul + e

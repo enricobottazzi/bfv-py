@@ -26,7 +26,7 @@ def recursive_fft(a: List[int]) -> List[complex]:
             w = w * w_n
         return y
     
-def uscaled_recursive_ifft(y: List[complex]) -> List[complex]:
+def unscaled_recursive_fft(y: List[complex]) -> List[complex]:
     n = len(y)
     if n == 1:
         return y
@@ -36,8 +36,8 @@ def uscaled_recursive_ifft(y: List[complex]) -> List[complex]:
         w = 1
         y_even = [y[i] for i in range(0, n, 2)]
         y_odd = [y[i] for i in range(1, n, 2)]
-        a_even = uscaled_recursive_ifft(y_even)
-        a_odd = uscaled_recursive_ifft(y_odd)
+        a_even = unscaled_recursive_fft(y_even)
+        a_odd = unscaled_recursive_fft(y_odd)
         a = [complex(0, 0)] * n
         for k in range(n // 2):
             a[k] = a_even[k] + w * a_odd[k]
@@ -50,7 +50,7 @@ def recursive_ifft(y: List[complex]) -> List[complex]:
     Compute the recursive IFFT of a list of complex numbers
     Check https://stackoverflow.com/questions/48572647/recursive-inverse-fft 
     """
-    coeffs = uscaled_recursive_ifft(y)
+    coeffs = unscaled_recursive_fft(y)
     coeffs = [coeff / len(coeffs) for coeff in coeffs]     
     coeffs = [nint(coeff.real) for coeff in coeffs]  
     return coeffs
