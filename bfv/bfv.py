@@ -1,11 +1,9 @@
 from .polynomial import PolynomialRing, Polynomial, get_centered_remainder
 from .discrete_gauss import DiscreteGaussian
 from .crt import CRTModuli, CRTPolynomial
-from .utils import mod_inverse_centered, mod_inverse
 from .ntt import ntt_poly_mul_centered_remainder
 import numpy as np
 from decimal import Decimal
-
 
 class RLWE:
     def __init__(self, n: int, q: int, t: int, distribution: DiscreteGaussian):
@@ -331,6 +329,7 @@ class BFVCrt:
         Initialize a BFV instance starting from:
 
         - crt_moduli: CRTModuli instance representing the CRT decomposition of the modulus q of the ciphertext space.
+        Assumes that each modulus qi in the CRT decomposition is a prime number so that we can leverage NTT for fast polynomial multiplication.
         - n: degree of the f(x) which is the denominator of the polynomial ring, must be a power of 2.
         - t: modulus t of the plaintext space
         - discrete_gauss: Error distribution (e.g. Gaussian).
@@ -358,7 +357,7 @@ class BFVCrt:
 
     def PublicKeyGen(
         self, s: Polynomial, e: Polynomial, ais: list[Polynomial]
-    ) -> [tuple[Polynomial, Polynomial]]:
+    ) -> tuple[Polynomial, Polynomial]:
         """
         Generate a set of public keys for each crt basis from a given secret key.
 
@@ -399,7 +398,7 @@ class BFVCrt:
     
     def PubKeyEncrypt(
         self,
-        public_keys: [tuple[Polynomial, Polynomial]],
+        public_keys: tuple[Polynomial, Polynomial],
         m: Polynomial,
         e0: Polynomial,
         e1: Polynomial,
@@ -425,7 +424,7 @@ class BFVCrt:
 
         for i, public_key_qi in enumerate(public_keys):
 
-            negative_mod_inverse_t = mod_inverse(self.bfv_q.rlwe.Rt.modulus, self.crt_moduli.qis[i]) * -1
+            negative_mod_inverse_t = pow(-1 * self.bfv_q.rlwe.Rt.modulus, -1, self.crt_moduli.qis[i])
             scaled_message = partial_scaled_message.scalar_mul(negative_mod_inverse_t)
             
             # pk0 * u
@@ -482,7 +481,7 @@ class BFVCrt:
 
         for i, a in enumerate(ais):
             
-            scaling_factor_den = mod_inverse(self.bfv_q.rlwe.Rt.modulus, self.crt_moduli.qis[i]) * -1
+            scaling_factor_den = pow(-1 * self.bfv_q.rlwe.Rt.modulus, -1, self.crt_moduli.qis[i])
 
             scaled_message = partial_scaled_message.scalar_mul(scaling_factor_den)
 
@@ -550,7 +549,9 @@ class BFVCrt:
                 for k in range(len(self.crt_moduli.qis)):
                     if k != j:
                         qi_star *= self.crt_moduli.qis[k]
-                qi_tilde = mod_inverse_centered(qi_star, self.crt_moduli.qis[j])  # inverse of qi_star mod self.crt_moduli.qis[i]
+                qi_tilde = pow(
+                    qi_star, -1, self.crt_moduli.qis[j]
+                )
                 scaling_factor = qi_tilde * self.bfv_q.rlwe.Rt.modulus
                 scaling_factor = Decimal(scaling_factor) / Decimal(self.crt_moduli.qis[j])
                 message_coeff += x_i * scaling_factor

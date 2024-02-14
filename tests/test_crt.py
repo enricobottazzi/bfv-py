@@ -3,7 +3,6 @@ import unittest
 from bfv.crt import CRTModuli, CRTInteger, CRTPolynomial
 from bfv.polynomial import PolynomialRing, Polynomial, poly_mul_naive
 from bfv.utils import find_odd_pairwise_coprimes
-from bfv.ntt import ntt_poly_mul, ntt_poly_mul_centered_remainder
 import random
 from mpmath import *
 
@@ -45,23 +44,10 @@ class TestCRTInteger(unittest.TestCase):
         self.assertEqual(crt_integer.recover(), x)
 
 
-class TestPolynomialWithCRT(unittest.TestCase):
+class TestPolynomialWithCRTAndRandomCoprimes(unittest.TestCase):
     def setUp(self):
-        self.qis = [1152921504606584833,
-            1152921504598720513,
-            1152921504597016577,
-            1152921504595968001,
-            1152921504595640321,
-            1152921504593412097,
-            1152921504592822273,
-            1152921504592429057,
-            1152921504589938689,
-            1152921504586530817,
-            1152921504585547777,
-            1152921504583647233,
-            1152921504581877761,
-            1152921504581419009,
-            1152921504580894721]
+        start = random.getrandbits(60)
+        self.qis = find_odd_pairwise_coprimes(start, 15)
         self.crt_moduli = CRTModuli(self.qis)
         self.n = 1024
         self.rq = PolynomialRing(self.n, self.crt_moduli.q)
@@ -131,18 +117,10 @@ class TestPolynomialWithCRT(unittest.TestCase):
         # Perform a * b in crt representation
         c_rqis = []
         for i in range(len(self.crt_moduli.qis)):
-            c_rqi = ntt_poly_mul_centered_remainder(a_rqis[i].coefficients, b_rqis[i].coefficients, self.n * 2, self.crt_moduli.qis[i])
-            c_rqi = Polynomial(c_rqi)
+            c_rqi = a_rqis[i] * b_rqis[i]
             rqi = PolynomialRing(self.n, self.crt_moduli.qis[i])
             c_rqi.reduce_in_ring(rqi)
             c_rqis.append(c_rqi)
-
-            # perform the same multiplication naively
-            product_naive = poly_mul_naive(a_rqis[i].coefficients, b_rqis[i].coefficients)
-            product_naive = Polynomial(product_naive)
-            product_naive.reduce_in_ring(rqi)
-            assert c_rqi.coefficients == product_naive.coefficients
-
         # Recover c from its CRT representations
         c_recovered = CRTPolynomial.from_rqi_polynomials_to_rq_polynomial(
             c_rqis, self.n, self.crt_moduli

@@ -3,8 +3,6 @@ from bfv.discrete_gauss import DiscreteGaussian
 from bfv.polynomial import PolynomialRing, Polynomial
 from bfv.bfv import RLWE, BFV, BFVCrt
 from bfv.crt import CRTModuli
-from bfv.utils import find_odd_pairwise_coprimes
-from random import getrandbits
 from mpmath import *
 
 class TestRLWE(unittest.TestCase):
@@ -265,6 +263,8 @@ class TestBFV(unittest.TestCase):
 
 class TestBFVVWithCRT(unittest.TestCase):
     # The bigmodulus q is intepreted as a product of small moduli qis.
+    # Note that here we are using a specific set of qis, in which each qi is a prime number.
+    # This allows us to perform efficient polynomial multiplication leveraging NTT.
     def setUp(self):
         qis = [1152921504606584833,
             1152921504598720513,

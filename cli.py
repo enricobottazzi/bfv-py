@@ -1,8 +1,6 @@
 import argparse
 import json
 from bfv.polynomial import Polynomial
-from bfv.utils import adjust_negative_coefficients
-
 from bfv.bfv import BFV, RLWE
 from bfv.discrete_gauss import DiscreteGaussian
 import time
@@ -81,15 +79,15 @@ def main(args):
     with open(args.output, "w") as f:
         json.dump(
             {
-                "pk0": adjust_negative_coefficients(public_key[0], q).coefficients,
-                "pk1": adjust_negative_coefficients(public_key[1], q).coefficients,
-                "m": adjust_negative_coefficients(message, q).coefficients,
-                "u": adjust_negative_coefficients(u, q).coefficients,
-                "e0": adjust_negative_coefficients(e0, q).coefficients,
-                "e1": adjust_negative_coefficients(e1, q).coefficients,
-                "c0": adjust_negative_coefficients(c0, q).coefficients,
-                "c1": adjust_negative_coefficients(c1, q).coefficients,
-                "cyclo": adjust_negative_coefficients(Polynomial(bfv.rlwe.Rq.denominator), q).coefficients,
+                "pk0": public_key[0].into_standard_form(q).coefficients,
+                "pk1": public_key[1].into_standard_form(q).coefficients,
+                "m": message.into_standard_form(q).coefficients,
+                "u": u.into_standard_form(q).coefficients,
+                "e0": e0.into_standard_form(q).coefficients,
+                "e1": e1.into_standard_form(q).coefficients,
+                "c0": c0.into_standard_form(q).coefficients,
+                "c1": c1.into_standard_form(q).coefficients,
+                "cyclo": Polynomial(bfv.rlwe.Rq.denominator).into_standard_form(q).coefficients,
             },
             f,
         )

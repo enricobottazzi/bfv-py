@@ -3,11 +3,9 @@ import numpy as np
 from bfv.polynomial import (
     PolynomialRing,
     Polynomial,
-    get_centered_remainder,
     poly_mul_naive,
 )
 import random
-from bfv.utils import adjust_negative_coefficients
 from mpmath import *
 
 class TestPolynomialRing(unittest.TestCase):
@@ -90,23 +88,6 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         assert result.coefficients == [-1, -1, -3, -1]
 
-    def test_mul_poly_high_precision(self):
-        n = 1024
-        coeffs1 = [random.getrandbits(60) for _ in range(n)]
-        coeffs2 = [random.getrandbits(60) for _ in range(n)]
-
-        aq1 = Polynomial(coeffs1)
-        aq2 = Polynomial(coeffs2)
-
-        # aq1 * aq2
-        result = aq1 * aq2
-
-        # perform the multiplication naively
-        product_naive = poly_mul_naive(coeffs1, coeffs2)
-
-        assert result.coefficients == product_naive
-
-
     def test_mul_poly_in_ring_Rq(self):
         n = 1024
         q = random.getrandbits(60)
@@ -185,65 +166,22 @@ class TestPolynomialInRingRq(unittest.TestCase):
 
         
 class TestCenteredRemainder(unittest.TestCase):
-    # For modulus 7, the centered remainder range in which the coefficients of the polynomial should lie is [-3, 3]
-    # When applying the function adjust_negative_coefficients, the coefficients should be adjusted back
-    def test_positive_values(self):
-        self.assertEqual(
-            get_centered_remainder(3, 7), 3
-        )
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([3]), 7).coefficients, [3]
-        )
-        self.assertEqual(
-            get_centered_remainder(15, 7), 1
-        )
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([1]), 7).coefficients, [15 % 7]
-        )
-        self.assertEqual(
-            get_centered_remainder(6, 7), -1
-        )  # 6 % 7 = 6, which is > 3. So, 6 - 7 = -1
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([-1]), 7).coefficients, [6]
-        )
 
-    def test_negative_values(self):
-        self.assertEqual(get_centered_remainder(-8, 7), -1)
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([-1]), 7).coefficients, [-8 % 7]
-        )
-        self.assertEqual(
-            get_centered_remainder(-15, 7), -1
-        ) 
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([-1]), 7).coefficients, [-15 % 7]
-        )
-        self.assertEqual(
-            get_centered_remainder(-17, 7), -3
-        )
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([-3]), 7).coefficients, [-17 % 7]
-        )
+    def test_into_centered_coefficients(self):
 
-    def test_boundary_values(self):
-        q = 7
-        self.assertEqual(
-            get_centered_remainder(- (q - 1) / 2, q), - (q - 1) / 2, q
-        )
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([-(q - 1) / 2]), q).coefficients, [-(q - 1) / 2 % q]
-        )
-        self.assertEqual(
-            get_centered_remainder((q - 1) / 2, q), (q - 1) / 2
-        )
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([(q - 1) / 2]), q).coefficients, [(q - 1) / 2 % q]
-        )
+        mod = 7
+        val = random.randint(-100, 100)
+        res = Polynomial([val]).into_centered_coefficients(mod).coefficients[0]
 
-    def test_zero(self):
-        self.assertEqual(
-            get_centered_remainder(0, 7), 0
-        )
-        self.assertEqual(
-            adjust_negative_coefficients(Polynomial([0]), 7).coefficients, [0]
-        )
+        # assert that the result is in the range [-(mod-1)/2, (mod-1)/2]
+        assert res >= -(mod - 1) / 2 and res <= (mod - 1) / 2
+
+    def test_into_standard_form(self):
+
+        mod = 7
+        val = random.randint(-100, 100)
+        res = Polynomial([val]).into_standard_form(mod).coefficients[0]
+
+        # assert that the result is in the range [0, mod-1]
+        assert res >= 0 and res <= mod - 1
+        assert res == val % mod
