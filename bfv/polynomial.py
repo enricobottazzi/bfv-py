@@ -120,6 +120,9 @@ class Polynomial:
 
 
 def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[int]]:
+    # assert that the leading coefficient of the divisor is not zero
+    assert divisor[0] != 0
+
     # Initialize quotient and remainder
     quotient = [0] * (len(dividend) - len(divisor) + 1)
     remainder = list(dividend)
@@ -129,8 +132,6 @@ def poly_div(dividend: list[int], divisor: list[int]) -> tuple[list[int], list[i
         coeff = (
             remainder[i] // divisor[0]
         )  # Calculate the leading coefficient of quotient
-        # turn coeff into an integer
-        coeff = coeff
         quotient[i] = coeff
 
         # Subtract the current divisor*coeff from the remainder

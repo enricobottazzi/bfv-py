@@ -118,7 +118,7 @@ class CRTPolynomial:
         rqi_polynomials: List[Polynomial], n: int, crt_moduli: CRTModuli
     ) -> Polynomial:
         """
-        Recover polynomial `a`, defined in the ring R_q, from its CRT representations, defined in the rings R_qi
+        Recover polynomial `rqi_polynomials`, defined in the ring R_q, from its CRT representations, defined in the rings R_qi
 
         Parameters:
         - rqi_polynomials: list of polynomials in R_qi
