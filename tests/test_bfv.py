@@ -78,32 +78,12 @@ class TestBFV(unittest.TestCase):
         self.assertIsInstance(public_key[0], Polynomial)
         self.assertIsInstance(public_key[1], Polynomial)
 
-        # Ensure that the coefficients of the public key are within the range [-(q-1)/2, (q-1)/2]
-        lower_bound = -(self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
-        upper_bound = (self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
-        for coeff in public_key[0].coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
-        for coeff in public_key[1].coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
+        self._check_coefficients_in_range(public_key[0].coefficients, self.bfv.rlwe.Rq.modulus)
+        self._check_coefficients_in_range(public_key[1].coefficients, self.bfv.rlwe.Rq.modulus)
 
     def test_message_sample(self):
         message = self.bfv.rlwe.Rt.sample_polynomial()
-
-        # Ensure that the coefficients of the public key are within the range = [-(t-1)/2, (t-1)/2]
-        lower_bound = -(self.bfv.rlwe.Rt.modulus - 1) / 2 # inclusive
-        upper_bound = (self.bfv.rlwe.Rt.modulus - 1) / 2 # inclusive
-
-        for coeff in message.coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
+        self._check_coefficients_in_range(message.coefficients, self.bfv.rlwe.Rt.modulus)
 
     def test_valid_public_key_encryption(self):
         secret_key = self.bfv.SecretKeyGen()
@@ -121,22 +101,8 @@ class TestBFV(unittest.TestCase):
             public_key, message, e0, e1, u
         )
 
-        # Ensure that the ciphertext is a polynomial in Rq
-        # Ensure that the coefficients of the ciphertext are within the range [-(q-1)/2, (q-1)/2]
-        lower_bound = -(self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
-        upper_bound = (self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
-
-        for coeff in ciphertext[0].coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
-        for coeff in ciphertext[1].coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
-        # Ensure that the degree of the ciphertext is at most n-1, which means the has at most n coefficients
+        self._check_coefficients_in_range(ciphertext[0].coefficients, self.bfv.rlwe.Rq.modulus)
+        self._check_coefficients_in_range(ciphertext[1].coefficients, self.bfv.rlwe.Rq.modulus)
         self.assertTrue(len(ciphertext[0].coefficients) <= self.bfv.rlwe.n)
 
     def test_valid_public_key_decryption(self):
@@ -157,23 +123,20 @@ class TestBFV(unittest.TestCase):
 
         dec = self.bfv.Decrypt(secret_key, ciphertext)
 
-        # ensure that message and dec are the same
-        for i in range(len(message.coefficients)):
-            self.assertEqual(message.coefficients[i], dec.coefficients[i])
+        self._check_messages_are_equal(message.coefficients, dec.coefficients)
 
     def test_valid_secret_key_decryption(self):
         secret_key = self.bfv.SecretKeyGen()
-        message = self.bfv.rlwe.Rt.sample_polynomial()
-        a = self.bfv.rlwe.Rq.sample_polynomial()
         e = self.bfv.rlwe.SampleFromErrorDistribution()
+        a = self.bfv.rlwe.Rq.sample_polynomial()
 
+        message = self.bfv.rlwe.Rt.sample_polynomial()
+        
         ciphertext = self.bfv.SecretKeyEncrypt(secret_key, message, a, e)
 
         dec = self.bfv.Decrypt(secret_key, ciphertext)
 
-        # ensure that message and dec are the same
-        for i in range(len(message.coefficients)):
-            self.assertEqual(message.coefficients[i], dec.coefficients[i])
+        self._check_messages_are_equal(message.coefficients, dec.coefficients)
 
     def test_eval_add(self):
         secret_key = self.bfv.SecretKeyGen()
@@ -204,30 +167,14 @@ class TestBFV(unittest.TestCase):
 
         ciphertext_sum = self.bfv.EvalAdd(ciphertext1, ciphertext2)
 
-        # Ensure that the ciphertext_sum is a polynomial in Rq
-        # Ensure that the ciphertext_sum of the ciphertext are within the range [-(q-1)/2, (q-1)/2]
-        lower_bound = -(self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
-        upper_bound = (self.bfv.rlwe.Rq.modulus - 1) / 2 # inclusive
-
-        for coeff in ciphertext_sum[0].coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
-        for coeff in ciphertext_sum[1].coefficients:
-            self.assertTrue(
-                coeff >= lower_bound
-                and coeff <= upper_bound
-            )
-        # Ensure that the degree of the ciphertext_sum is at most n-1, which means the has at most n coefficients
+        self._check_coefficients_in_range(ciphertext_sum[0].coefficients, self.bfv.rlwe.Rq.modulus)
+        self._check_coefficients_in_range(ciphertext_sum[1].coefficients, self.bfv.rlwe.Rq.modulus)
         self.assertTrue(len(ciphertext_sum[0].coefficients) <= self.bfv.rlwe.n)
 
         # decrypt ciphertext_sum
         dec = self.bfv.Decrypt(secret_key, ciphertext_sum)
 
-        # ensure that message_sum and dec are the same
-        for i in range(len(message_sum.coefficients)):
-            self.assertEqual(message_sum.coefficients[i], dec.coefficients[i])
+        self._check_messages_are_equal(message_sum.coefficients, dec.coefficients)
 
     def test_eval_const_add(self):
         secret_key = self.bfv.SecretKeyGen()
@@ -257,9 +204,20 @@ class TestBFV(unittest.TestCase):
         # decrypt ciphertext_sum
         dec = self.bfv.Decrypt(secret_key, ciphertext_sum)
 
-        # ensure that message_sum and dec are the same
-        for i in range(len(message_sum.coefficients)):
-            self.assertEqual(message_sum.coefficients[i], dec.coefficients[i])
+        self._check_messages_are_equal(message_sum.coefficients, dec.coefficients)
+
+    def _check_coefficients_in_range(self, coefficients, modulus):
+        lower_bound = -(modulus - 1) / 2
+        upper_bound = (modulus - 1) / 2
+        for coeff in coefficients:
+            self.assertTrue(
+                coeff >= lower_bound
+                and coeff <= upper_bound
+            )
+
+    def _check_messages_are_equal(self, message1, message2):
+        for i in range(len(message1)):
+            self.assertEqual(message1[i], message2[i])
 
 class TestBFVVWithCRT(unittest.TestCase):
     # The bigmodulus q is intepreted as a product of small moduli qis.
@@ -288,14 +246,15 @@ class TestBFVVWithCRT(unittest.TestCase):
         discrete_gaussian = DiscreteGaussian(sigma)
         t = 65537
         self.bfv_crt = BFVCrt(self.crt_moduli, self.n, t, discrete_gaussian)
-
-    def test_valid_public_key_generation(self):
-
+        
+    def generate_common_params(self):
         s = self.bfv_crt.SecretKeyGen()
         e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
-        ais = []
-        for i in range(len(self.crt_moduli.qis)):
-            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+        ais = [self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial() for i in range(len(self.crt_moduli.qis))]
+        return s, e, ais
+    
+    def test_valid_public_key_generation(self):
+        s, e, ais = self.generate_common_params()
 
         pub_keys = self.bfv_crt.PublicKeyGen(s, e, ais)
         
@@ -309,11 +268,7 @@ class TestBFVVWithCRT(unittest.TestCase):
                 self.assertTrue(coeff >= lower_bound and coeff <= upper_bound)
 
     def test_valid_public_key_decryption(self):
-        s = self.bfv_crt.SecretKeyGen()
-        e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
-        ais = []
-        for i in range(len(self.crt_moduli.qis)):
-            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+        s, e, ais = self.generate_common_params()
 
         pub_keys = self.bfv_crt.PublicKeyGen(s, e, ais)
         message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
@@ -329,11 +284,7 @@ class TestBFVVWithCRT(unittest.TestCase):
         assert message_prime == message
 
     def test_valid_dummy_public_key_decryption(self):
-        s = self.bfv_crt.SecretKeyGen()
-        e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
-        ais = []
-        for i in range(len(self.crt_moduli.qis)):
-            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+        s, e, ais = self.generate_common_params()
 
         pub_keys = self.bfv_crt.PublicKeyGen(s, e, ais)
         message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
@@ -342,17 +293,14 @@ class TestBFVVWithCRT(unittest.TestCase):
         e1 = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
         u = self.bfv_crt.bfv_q.rlwe.SampleFromTernaryDistribution()
 
-        ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message, e0, e1, u)        
+        ciphertexts = self.bfv_crt.PubKeyEncrypt(pub_keys, message, e0, e1, u)
+        
         message_prime = self.bfv_crt.DecryptDummy(s, ciphertexts)
 
         assert message_prime == message
 
     def test_valid_secret_key_decryption(self):
-        s = self.bfv_crt.SecretKeyGen()
-        e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
-        ais = []
-        for i in range(len(self.crt_moduli.qis)):
-            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+        s, e, ais = self.generate_common_params()
 
         message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
 
@@ -363,15 +311,12 @@ class TestBFVVWithCRT(unittest.TestCase):
         assert message_prime == message
 
     def test_valid_dummy_secret_key_decryption(self):
-        s = self.bfv_crt.SecretKeyGen()
-        e = self.bfv_crt.bfv_q.rlwe.SampleFromErrorDistribution()
-        ais = []
-        for i in range(len(self.crt_moduli.qis)):
-            ais.append(self.bfv_crt.bfv_qis[i].rlwe.Rq.sample_polynomial())
+        s, e, ais = self.generate_common_params()
 
         message = self.bfv_crt.bfv_q.rlwe.Rt.sample_polynomial()
 
         ciphertexts = self.bfv_crt.SecretKeyEncrypt(s, ais, e, message)
+        
         message_prime = self.bfv_crt.DecryptDummy(s, ciphertexts)
 
         assert message_prime == message
