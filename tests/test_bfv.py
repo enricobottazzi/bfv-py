@@ -273,13 +273,13 @@ class TestBFV(unittest.TestCase):
                 coeff >= lower_bound
                 and coeff <= upper_bound
             )
-        # Ensure that the degree of the ciphertext_sum is at most n-1, which means the has at most n coefficients
+        # Ensure that the degree of the ciphertext_sub is at most n-1, which means the has at most n coefficients
         self.assertTrue(len(ciphertext_sub[0].coefficients) <= self.bfv.rlwe.n)
 
-        # decrypt ciphertext_sum
+        # decrypt ciphertext_sub
         dec = self.bfv.Decrypt(secret_key, ciphertext_sub)
 
-        # ensure that message_sum and dec are the same
+        # ensure that message_sub and dec are the same
         for i in range(len(message_sub.coefficients)):
             self.assertEqual(message_sub.coefficients[i], dec.coefficients[i])
 
